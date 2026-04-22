@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emma · Sales Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg0: #080a12;
+  --bg1: #0d1020;
+  --bg2: #131728;
+  --bg3: #1a2035;
+  --bg4: #212840;
+  --accent: #6366f1;
+  --accent2: #818cf8;
+  --accent-glow: rgba(99,102,241,.18);
+  --out: #3730a3;
+  --out2: #4338ca;
+  --in: #1a2035;
+  --txt0: #f1f5f9;
+  --txt1: #94a3b8;
+  --txt2: #4b5563;
+  --border: rgba(255,255,255,.06);
+  --green: #22c55e; --green-bg: rgba(34,197,94,.12);
+  --yellow: #f59e0b; --yellow-bg: rgba(245,158,11,.12);
+  --red: #f87171; --red-bg: rgba(248,113,113,.12);
+  --radius: 12px; --radius-sm: 8px; --radius-xs: 5px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg0);
+  color: var(--txt0);
+  height: 100vh; overflow: hidden;
+  display: grid;
+  grid-template-columns: 300px 1fr 350px;
+  grid-template-rows: 100vh;
+}
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+
+/* ── LEFT SIDEBAR ── */
+#sidebar {
+  background: var(--bg1);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.sidebar-head {
+  padding: 16px 14px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.logo-mark {
+  width: 28px; height: 28px; background: var(--accent); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0;
+  box-shadow: 0 0 14px var(--accent-glow);
+}
+.sidebar-head h1 { font-size: 14px; font-weight: 600; flex: 1; }
+#sync-btn {
+  background: var(--bg3); border: 1px solid var(--border);
+  color: var(--txt1); padding: 5px 10px; border-radius: var(--radius-xs);
+  font-size: 11px; font-family: 'Outfit',sans-serif; cursor: pointer;
+  transition: all .2s; display: flex; align-items: center; gap: 5px;
+}
+#sync-btn:hover { background: var(--bg4); color: var(--txt0); }
+.sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--txt2); transition: background .3s; }
+.running .sync-dot { background: var(--yellow); animation: pulse 1s infinite; }
+.done .sync-dot { background: var(--green); }
+.running #sync-label { color: var(--yellow); }
+.done #sync-label { color: var(--green); }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+.search-wrap {
+  padding: 10px 12px; border-bottom: 1px solid var(--border);
+}
+.search-wrap input {
+  width: 100%; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--txt0);
+  font-family: 'Outfit',sans-serif; font-size: 13px;
+  padding: 8px 12px 8px 32px; outline: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234b5563' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: 10px center;
+  transition: border-color .2s;
+}
+.search-wrap input:focus { border-color: var(--accent); }
+.search-wrap input::placeholder { color: var(--txt2); }
+#contact-list { flex: 1; overflow-y: auto; padding: 4px 0; }
+.contact-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; cursor: pointer; transition: background .15s;
+  border-bottom: 1px solid rgba(255,255,255,.02); position: relative;
+}
+.contact-item:hover { background: var(--bg2); }
+.contact-item.active { background: var(--bg3); }
+.contact-item.active::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--accent); border-radius: 0 2px 2px 0;
+}
+.c-avatar {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  overflow: hidden; background: var(--bg4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600; color: var(--accent2);
+  position: relative;
+}
+.c-avatar img { width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index:1; background:var(--bg4); }
+.c-avatar .ini { position:relative; z-index:0; pointer-events:none; }
+.c-avatar .ampel-dot {
+  position: absolute; bottom: 0px; right: 0px;
+  width: 11px; height: 11px; border-radius: 50%;
+  border: 2px solid var(--bg1); z-index: 2;
+}
+.c-info { flex: 1; min-width: 0; }
+.c-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c-last { font-size: 11px; color: var(--txt2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.c-last.new { color: var(--txt1); font-weight: 500; }
+.c-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+.c-time { font-size: 10px; color: var(--txt2); }
+.no-items { text-align: center; padding: 40px 20px; color: var(--txt2); font-size: 13px; }
+
+/* ── CENTER CHAT ── */
+#chat {
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--bg0);
+}
+#chat-header {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg1); min-height: 62px;
+}
+.ch-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--bg3); overflow: hidden; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; color: var(--accent2); flex-shrink: 0;
+}
+.ch-avatar img { width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index:1; background:var(--bg4); }
+.ch-avatar .ini { position:relative; z-index:0; pointer-events:none; }
+.ch-info { flex: 1; }
+.ch-name { font-size: 15px; font-weight: 600; }
+.ch-sub { font-size: 11px; color: var(--txt1); margin-top: 1px; }
+.flow-chip {
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: .3px;
+}
+.flow-ADVANCE { background: var(--green-bg); color: var(--green); }
+.flow-HOLD    { background: var(--yellow-bg); color: var(--yellow); }
+.flow-RECOVERY{ background: var(--red-bg); color: var(--red); }
+.blocker-badge {
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  background: var(--accent-glow); color: var(--accent2);
+}
+#messages-wrap {
+  flex: 1; overflow-y: auto; padding: 16px 20px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.msg-group { display: flex; flex-direction: column; }
+.msg-bubble {
+  max-width: 70%; padding: 10px 14px; border-radius: 16px;
+  font-size: 13.5px; line-height: 1.6; word-break: break-word;
+}
+.msg-out { align-self: flex-end; background: var(--out2); color: #dde0ff; border-bottom-right-radius: 4px; }
+.msg-in  { align-self: flex-start; background: var(--bg2); color: var(--txt0); border-bottom-left-radius: 4px; }
+.msg-time { font-size: 10px; color: var(--txt2); margin: 3px 4px 8px; }
+.msg-time.r { text-align: right; }
+.date-div { text-align: center; font-size: 11px; color: var(--txt2); margin: 10px 0 4px; }
+.empty-chat {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: var(--txt2); gap: 12px;
+}
+.empty-chat p { font-size: 13px; }
+#emma-bar {
+  margin: 0 14px 8px;
+  padding: 9px 12px;
+  background: linear-gradient(135deg, var(--accent-glow), rgba(129,140,248,.06));
+  border: 1px solid rgba(99,102,241,.2);
+  border-radius: var(--radius-sm);
+  font-size: 12px; color: var(--accent2);
+  display: none; align-items: flex-start; gap: 8px;
+}
+#emma-bar.on { display: flex; }
+#emma-bar strong { color: var(--txt0); }
+#input-area {
+  padding: 10px 14px 14px; border-top: 1px solid var(--border); background: var(--bg1);
+}
+.input-wrap { display: flex; gap: 8px; align-items: flex-end; }
+#msg-input {
+  flex: 1; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--txt0);
+  font-family: 'Outfit',sans-serif; font-size: 13.5px;
+  padding: 10px 14px; outline: none; resize: none;
+  min-height: 42px; max-height: 120px; transition: border-color .2s;
+}
+#msg-input:focus { border-color: var(--accent); }
+#msg-input::placeholder { color: var(--txt2); }
+#msg-input:disabled { opacity: .4; }
+#send-btn {
+  background: var(--accent); border: none; border-radius: var(--radius-sm);
+  color: #fff; cursor: pointer; width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: background .2s, transform .1s;
+}
+#send-btn:hover { background: var(--accent2); }
+#send-btn:active { transform: scale(.93); }
+#send-btn:disabled { opacity: .4; cursor: not-allowed; }
+#ai-btn {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  border: none; border-radius: var(--radius-sm);
+  color: #fff; cursor: pointer; width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: opacity .2s, transform .1s;
+  position: relative;
+}
+#ai-btn:hover { opacity: .85; }
+#ai-btn:active { transform: scale(.93); }
+#ai-btn:disabled { opacity: .35; cursor: not-allowed; }
+#ai-btn.loading { animation: pulse 1s infinite; }
+.ai-hint {
+  font-size: 10px; color: var(--txt2); text-align: center;
+  margin-top: 4px; letter-spacing: .2px;
+}
+#draft-notice {
+  font-size: 11px; color: var(--accent2); margin-bottom: 4px;
+  padding: 4px 8px; background: var(--accent-glow); border-radius: 4px;
+  display: none;
+}
+#draft-notice.on { display: block; }
+
+/* ── RIGHT PANEL ── */
+#profile {
+  background: var(--bg1); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow-y: auto;
+}
+.p-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.sec-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 1px;
+  color: var(--txt2); text-transform: uppercase; margin-bottom: 10px;
+}
+#profile-card {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px; text-align: center; padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.p-avatar {
+  width: 68px; height: 68px; border-radius: 50%;
+  background: var(--bg3); overflow: hidden; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 600; color: var(--accent2);
+  border: 2px solid rgba(99,102,241,.3); flex-shrink: 0;
+}
+.p-avatar img { width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index:1; background:var(--bg4); }
+.p-avatar .ini { position:relative; z-index:0; pointer-events:none; }
+.p-name { font-size: 16px; font-weight: 600; line-height: 1.3; }
+.p-company { font-size: 11px; color: var(--txt1); }
+.p-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 4px; }
+.p-chip { font-size: 10px; padding: 2px 8px; border-radius: 20px; background: var(--bg3); color: var(--txt1); }
+#emma-decision { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.drow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.dtype-badge {
+  font-size: 10px; padding: 2px 8px; border-radius: 20px;
+  background: var(--bg3); color: var(--txt1); font-weight: 500;
+}
+.interv-line { font-size: 11px; color: var(--txt2); }
+.interv-line span { color: var(--accent2); font-weight: 500; }
+/* Layers */
+#layer-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.layer-row {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 9px;
+}
+.layer-row:last-child { margin-bottom: 0; }
+.lrow-label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 500; width: 90px; flex-shrink: 0;
+  color: var(--txt1);
+}
+.lrow-label.blocker { color: var(--red); font-weight: 700; }
+.lrow-bar { flex: 1; height: 4px; background: var(--bg4); border-radius: 4px; overflow: hidden; }
+.lrow-fill { height: 100%; border-radius: 4px; transition: width .5s; }
+.lrow-score {
+  font-family: 'JetBrains Mono',monospace; font-size: 11px; font-weight: 700;
+  width: 36px; text-align: right; flex-shrink: 0;
+}
+.lscale { font-family: 'JetBrains Mono',monospace; font-size: 9px; color: var(--txt2); font-weight: 400; }
+.g { color: var(--green); } .bg { background: var(--green); }
+.y { color: var(--yellow); } .by { background: var(--yellow); }
+.r { color: var(--red); }   .br { background: var(--red); }
+/* Pain points */
+#pain-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.pain-item { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.03); }
+.pain-item:last-child { border-bottom: none; }
+.pain-ico { width: 22px; height: 22px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; font-weight: 700; }
+.pain-info { flex: 1; min-width: 0; }
+.pain-layer { font-size: 11px; font-weight: 600; }
+.pain-txt { font-size: 10px; color: var(--txt2); margin-top: 1px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pain-d { font-family: 'JetBrains Mono',monospace; font-size: 10px; flex-shrink: 0; color: var(--red); }
+.no-item { font-size: 11px; color: var(--txt2); text-align: center; padding: 10px 0; }
+/* Trajectory */
+#traj-section { padding: 14px 16px; }
+.traj-layer { margin-bottom: 11px; }
+.traj-head { display: flex; justify-content: space-between; margin-bottom: 3px; }
+.traj-lname { font-size: 11px; font-weight: 500; }
+.traj-range { font-family: 'JetBrains Mono',monospace; font-size: 10px; color: var(--txt2); }
+.traj-track { height: 22px; background: var(--bg2); border-radius: 4px; overflow: hidden; }
+.traj-track svg { display: block; }
+.traj-events { margin-top: 12px; }
+.traj-ev {
+  padding: 7px 9px; background: var(--bg2); border-radius: var(--radius-xs);
+  margin-bottom: 5px; border-left: 3px solid transparent; font-size: 11px;
+}
+.traj-ev.pos { border-color: var(--green); }
+.traj-ev.neg { border-color: var(--red); }
+.traj-ev-meta { display: flex; justify-content: space-between; margin-bottom: 2px; }
+.traj-ev-l { font-weight: 600; }
+.traj-ev-c { font-family: 'JetBrains Mono',monospace; }
+.traj-ev-t { color: var(--txt2); font-size: 10px; line-height: 1.4; }
+.placeholder { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--txt2); gap: 10px; }
+.placeholder p { font-size: 13px; }
+.spinner { width: 18px; height: 18px; border: 2px solid var(--bg4); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- LEFT SIDEBAR -->
+<aside id="sidebar">
+  <div class="sidebar-head">
+    <div class="logo-mark">E</div>
+    <h1>Emma Inbox</h1>
+    <button id="sync-btn" onclick="triggerSync()">
+      <span class="sync-dot"></span>
+      <span id="sync-label">Sync</span>
+    </button>
+  </div>
+  <div class="search-wrap">
+    <input type="text" id="search-input" placeholder="Kontakt suchen..." oninput="filterContacts(this.value)">
+  </div>
+  <div id="contact-list">
+    <div class="no-items"><div class="spinner"></div></div>
+  </div>
+</aside>
+
+<!-- CENTER CHAT -->
+<main id="chat">
+  <div id="chat-header">
+    <div style="flex:1;color:var(--txt2);font-size:13px">Kontakt auswählen</div>
+  </div>
+  <div id="messages-wrap">
+    <div class="empty-chat">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      <p>Gespräch auswählen</p>
+    </div>
+  </div>
+  <div id="emma-bar"></div>
+  <div id="input-area">
+    <div id="draft-notice">✦ Emma-Entwurf — prüfen und ggf. anpassen, dann Senden</div>
+    <div class="input-wrap">
+      <textarea id="msg-input" placeholder="Nachricht schreiben…" rows="1" disabled
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';document.getElementById('draft-notice').className='';"></textarea>
+      <button id="ai-btn" onclick="generateReply()" disabled title="Emma KI-Antwort generieren">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+        </svg>
+      </button>
+      <button id="send-btn" onclick="sendMessage()" disabled>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+    <div class="ai-hint">★ = KI-Entwurf generieren &nbsp;·&nbsp; Enter = senden &nbsp;·&nbsp; Shift+Enter = neue Zeile</div>
+  </div>
+</main>
+
+<!-- RIGHT PANEL -->
+<aside id="profile">
+  <div class="placeholder">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+      <circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+    </svg>
+    <p>Kontakt auswählen</p>
+  </div>
+</aside>
+
+<script>
+const LAYERS = [
+  {key:'state_score',    de:'Zustand'},
+  {key:'clarity_score',  de:'Klarheit'},
+  {key:'ease_score',     de:'Leichtigkeit'},
+  {key:'trust_score',    de:'Vertrauen'},
+  {key:'momentum_score', de:'Momentum'},
+  {key:'authority_score',de:'Autorität'},
+];
+const LAYER_MAP = Object.fromEntries(LAYERS.map(l=>[l.key,l.de]));
+const INTERVENTIONS = {
+  MIRROR:'Spiegeln — Kernaussage wiederholen',
+  REFRAME:'Reframe — Perspektive neu rahmen',
+  ACTIVATE:'Aktivieren — Nächsten Schritt anstoßen',
+  REDUCE:'Vereinfachen — Reibung senken',
+  SAFETY:'Sicherheit geben — Risiko nehmen',
+  TRUST_BUILD:'Vertrauen aufbauen — Soziale Beweise',
+  CLARIFY:'Klären — Offene Fragen ansprechen',
+  STRUCTURE:'Struktur geben — Klaren Rahmen bieten',
+  ROUTE:'Weiterleiten — Entscheider einbeziehen',
+};
+const DTYPE_LABELS = {THINKER:'Denker',DOER:'Macher',VISUAL:'Visuell',SPEAKER:'Kommunikator',MIXED:'Gemischt'};
+
+let allContacts = [], selectedId = null, msgPollId = null;
+
+// ─── HELPERS ───
+function ac(v) { return v>=8?'g':v>=4?'y':'r'; }
+function col(v){ return v>=8?'var(--green)':v>=4?'var(--yellow)':'var(--red)'; }
+function dot(v){ return v>=8?'🟢':v>=4?'🟡':'🔴'; }
+function ini(n){ return (n||'?').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?'; }
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+function trunc(s,n=60){ return s&&s.length>n?s.slice(0,n)+'…':(s||''); }
+// Proxy LinkedIn CDN through our server so cookies/CORS don't block images
+function proxyUrl(url){ return url ? `/api/img?url=${encodeURIComponent(url)}` : ''; }
+// Render avatar: initials always visible as bg; image overlaid via CSS position:absolute
+function mkAvatar(url, name, cls){
+  const i=ini(name), px=proxyUrl(url);
+  return `<div class="${cls}"><span class="ini">${i}</span>${px?`<img src="${px}" alt="${i}" onerror="this.remove()">`:''}`;
+}
+function tl(iso){
+  if(!iso)return'';
+  const d=new Date(iso),now=new Date(),diff=(now-d)/1000;
+  if(diff<86400)return d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  if(diff<604800)return d.toLocaleDateString('de-DE',{weekday:'short'});
+  return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'});
+}
+function overall(state){
+  if(!state)return 5;
+  const vals=LAYERS.map(l=>state[l.key]??5);
+  return vals.reduce((a,b)=>a+b,0)/vals.length;
+}
+function avaEl(url,name,cls){
+  const i=ini(name);
+  return `<div class="${cls}"><span class="ini">${i}</span>${url?`<img src="${url}" onerror="this.remove()" alt="${i}">`:''}`;
+}
+
+// ─── CONTACTS ───
+async function loadContacts(){
+  try{
+    const r=await fetch('/api/contacts');
+    allContacts=await r.json();
+    renderContactList(allContacts);
+    if(selectedId){
+      const c=allContacts.find(x=>x.id===selectedId);
+      if(c)updateDecisionLayers(c);
+    }
+  }catch(e){console.error(e);}
+}
+function filterContacts(q){
+  renderContactList(q?allContacts.filter(c=>c.linkedin_name.toLowerCase().includes(q.toLowerCase())):allContacts);
+}
+function renderContactList(list){
+  const el=document.getElementById('contact-list');
+  if(!list.length){el.innerHTML='<div class="no-items">Keine Kontakte.<br>Drücke Sync.</div>';return;}
+  el.innerHTML=list.map(c=>{
+    const a=ac(overall(c.state));
+    const col_map={g:'var(--green)',y:'var(--yellow)',r:'var(--red)'};
+    const prefix=c.last_direction==='outgoing'?'Du: ':'';
+    const newCls=c.last_direction==='incoming'?' new':'';
+    const i=ini(c.linkedin_name);
+    const px=proxyUrl(c.avatar_url);
+    return `<div class="contact-item${c.id===selectedId?' active':''}" onclick="selectContact('${c.id}')">
+      <div class="c-avatar">
+        <span class="ini">${i}</span>
+        ${px?`<img src="${px}" alt="${i}" onerror="this.remove()">` : ''}
+        <div class="ampel-dot" style="background:${col_map[a]}"></div>
+      </div>
+      <div class="c-info">
+        <div class="c-name">${c.linkedin_name}</div>
+        <div class="c-last${newCls}">${trunc(prefix+c.last_message,52)}</div>
+      </div>
+      <div class="c-meta"><span class="c-time">${tl(c.last_message_at)}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ─── SELECT ───
+async function selectContact(id){
+  selectedId=id;
+  renderContactList(allContacts);
+  const c=allContacts.find(x=>x.id===id);
+  if(!c)return;
+  document.getElementById('msg-input').disabled=false;
+  document.getElementById('send-btn').disabled=false;
+  document.getElementById('ai-btn').disabled=false;
+  renderChatHeader(c);
+  const[msgs,traj]=await Promise.all([
+    fetch(`/api/contacts/${id}/messages`).then(r=>r.json()),
+    fetch(`/api/contacts/${id}/trajectory`).then(r=>r.json()),
+  ]);
+  renderMessages(msgs,c);
+  renderProfile(c,traj);
+  renderEmmaBar(c);
+  clearInterval(msgPollId);
+  msgPollId=setInterval(async()=>{
+    if(selectedId!==id)return clearInterval(msgPollId);
+    const[fm,ft]=await Promise.all([
+      fetch(`/api/contacts/${id}/messages`).then(r=>r.json()),
+      fetch(`/api/contacts/${id}/trajectory`).then(r=>r.json()),
+    ]);
+    renderMessages(fm,c);
+    renderPainPoints(ft);
+    renderTrajectory(ft);
+  },8000);
+}
+
+// ─── CHAT HEADER ───
+function renderChatHeader(c){
+  const flow=c.flow_mode||'HOLD';
+  const blocker=c.blocker||'';
+  const i=ini(c.linkedin_name);
+  const _px=proxyUrl(c.avatar_url);
+  document.getElementById('chat-header').innerHTML=`
+    <div class="ch-avatar">
+      <span class="ini">${i}</span>
+      ${_px?`<img src="${_px}" alt="${i}" onerror="this.remove()">`:''}
+    </div>
+    <div class="ch-info">
+      <div class="ch-name">${c.linkedin_name}</div>
+      <div class="ch-sub">LinkedIn · ${c.turn_count||0} Turns</div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <span class="flow-chip flow-${flow}">${flow}</span>
+      ${blocker&&blocker!=='—'?`<span class="blocker-badge">${blocker}</span>`:''}
+    </div>`;
+}
+
+// ─── MESSAGES ───
+function renderMessages(msgs,c){
+  const wrap=document.getElementById('messages-wrap');
+  if(!msgs.length){wrap.innerHTML='<div class="date-div">Noch keine Nachrichten</div>';return;}
+  // Remember if user is near bottom before re-render (within 120px = auto-scroll ok)
+  const atBottom=wrap.scrollHeight-wrap.scrollTop-wrap.clientHeight<120;
+  const prevCount=wrap.querySelectorAll('.msg-group').length;
+  let html='',lastDate='';
+  msgs.forEach(m=>{
+    const d=m.created_at?new Date(m.created_at).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+    if(d&&d!==lastDate){html+=`<div class="date-div">${d}</div>`;lastDate=d;}
+    const isOut=m.direction==='outgoing';
+    const t=m.created_at?new Date(m.created_at).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'';
+    html+=`<div class="msg-group">
+      <div class="msg-bubble ${isOut?'msg-out':'msg-in'}">${esc(m.text)}</div>
+      <div class="msg-time${isOut?' r':''}">${t}</div>
+    </div>`;
+  });
+  wrap.innerHTML=html;
+  // Scroll to bottom only on first load or when already at bottom
+  if(prevCount===0||atBottom) wrap.scrollTop=wrap.scrollHeight;
+}
+
+// ─── EMMA BAR ───
+function renderEmmaBar(c){
+  const bar=document.getElementById('emma-bar');
+  const state=c.state||{};
+  const interv=state.current_intervention,blocker=state.current_blocker;
+  if(!interv||!blocker){bar.className='';return;}
+  bar.className='on';
+  bar.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+  <div><strong>${blocker} · ${interv}</strong> — ${INTERVENTIONS[interv]||interv}</div>`;
+}
+
+// ─── AI REPLY ───
+async function generateReply(){
+  if(!selectedId)return;
+  const btn=document.getElementById('ai-btn');
+  const inp=document.getElementById('msg-input');
+  const notice=document.getElementById('draft-notice');
+  btn.disabled=true;
+  btn.classList.add('loading');
+  notice.className='';
+  try{
+    const r=await fetch(`/api/contacts/${selectedId}/suggest`);
+    if(!r.ok){const e=await r.json();throw new Error(e.detail||r.status);}
+    const data=await r.json();
+    inp.value=data.reply||'';
+    inp.style.height='auto';
+    inp.style.height=Math.min(inp.scrollHeight,120)+'px';
+    notice.className='on';
+    inp.focus();
+    // Update Emma bar with fresh decision
+    const c=allContacts.find(x=>x.id===selectedId);
+    if(c&&data.blocker){
+      c.flow_mode=data.flow_mode;c.blocker=data.blocker;
+      if(c.state)c.state.current_intervention=data.intervention;
+      renderEmmaBar(c);
+    }
+  }catch(e){
+    alert('KI-Fehler: '+e.message);
+  }finally{
+    btn.disabled=false;
+    btn.classList.remove('loading');
+  }
+}
+
+// ─── SEND ───
+async function sendMessage(){
+  const inp=document.getElementById('msg-input');
+  const text=inp.value.trim();
+  if(!text||!selectedId)return;
+  inp.value='';inp.style.height='auto';
+  document.getElementById('send-btn').disabled=true;
+  try{
+    const r=await fetch(`/api/contacts/${selectedId}/send`,{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})
+    });
+    const data=await r.json();
+    const c=allContacts.find(x=>x.id===selectedId);
+    if(c){
+      c.state={...c.state,...data.scores,current_blocker:data.blocker,current_intervention:data.intervention,flow_mode:data.flow_mode};
+      c.flow_mode=data.flow_mode;c.blocker=data.blocker;
+      const msgs=await fetch(`/api/contacts/${selectedId}/messages`).then(r=>r.json());
+      renderMessages(msgs,c);renderChatHeader(c);renderEmmaBar(c);
+      updateDecisionLayers(c);
+    }
+  }catch(e){console.error(e);}
+  document.getElementById('send-btn').disabled=false;
+}
+
+// ─── PROFILE ───
+function renderProfile(c,traj){
+  const state=c.state||{};
+  const flow=c.flow_mode||state.flow_mode||'HOLD';
+  const blocker=c.blocker||state.current_blocker||'—';
+  const interv=state.current_intervention||'—';
+  const dtype=state.decision_type||'MIXED';
+  const i=ini(c.linkedin_name);
+  document.getElementById('profile').innerHTML=`
+    <div id="profile-card">
+      <div class="p-avatar">
+        <span class="ini">${i}</span>
+        ${proxyUrl(c.avatar_url)?`<img src="${proxyUrl(c.avatar_url)}" alt="${i}" onerror="this.remove()">`:''}
+      </div>
+      <div class="p-name">${c.linkedin_name}</div>
+      <div class="p-company">${c.campaign_id||'LinkedIn'}</div>
+      <div class="p-chips"><span class="p-chip">${c.turn_count||0} Turns</span></div>
+    </div>
+    <div id="emma-decision">
+      ${renderDecisionHTML(flow,blocker,interv,dtype)}
+    </div>
+    <div id="layer-section" class="p-section">
+      <div class="sec-label">7 Layer Scores</div>
+      ${renderLayerGridHTML(state)}
+    </div>
+    <div id="pain-section" class="p-section"></div>
+    <div id="traj-section" class="p-section"></div>
+  `;
+  renderPainPoints(traj);
+  renderTrajectory(traj);
+}
+
+function renderDecisionHTML(flow,blocker,interv,dtype){
+  return `<div class="sec-label">Emma Entscheidung</div>
+  <div class="drow">
+    <span class="flow-chip flow-${flow}">${flow}</span>
+    ${blocker&&blocker!=='—'?`<span class="blocker-badge">${blocker}</span>`:''}
+    <span class="dtype-badge">${DTYPE_LABELS[dtype]||dtype}</span>
+  </div>
+  <div class="interv-line">Intervention: <span>${interv}</span></div>`;
+}
+
+function renderLayerGridHTML(state){
+  const blocker=(state.current_blocker||'').toUpperCase();
+  return LAYERS.map(({key,de})=>{
+    const v=state[key]??5;
+    const a=ac(v);
+    const pct=(v/10*100).toFixed(0);
+    const isBlocker=blocker&&de.toUpperCase().startsWith(blocker.slice(0,4));
+    return `<div class="layer-row">
+      <div class="lrow-label${isBlocker?' blocker':''}">
+        <span style="font-size:9px">${dot(v)}</span>
+        ${isBlocker?'⚠ ':''}${de}
+      </div>
+      <div class="lrow-bar"><div class="lrow-fill b${a}" style="width:${pct}%"></div></div>
+      <div class="lrow-score ${a}">${v.toFixed(1)}<span class="lscale">/10</span></div>
+    </div>`;
+  }).join('');
+}
+
+function updateDecisionLayers(c){
+  const de=document.getElementById('emma-decision');
+  const ls=document.getElementById('layer-section');
+  if(!de||!ls)return;
+  const state=c.state||{};
+  de.innerHTML=renderDecisionHTML(c.flow_mode||state.flow_mode||'HOLD',c.blocker||state.current_blocker||'—',state.current_intervention||'—',state.decision_type||'MIXED');
+  ls.innerHTML=`<div class="sec-label">7 Layer Scores</div>${renderLayerGridHTML(state)}`;
+}
+
+// ─── PAIN POINTS ───
+function renderPainPoints(traj){
+  const el=document.getElementById('pain-section');
+  if(!el)return;
+  const pts=[];
+  traj.forEach(turn=>{
+    if(turn.direction!=='incoming')return;
+    Object.entries(turn.changes||{}).forEach(([k,ch])=>{
+      if(ch.delta<-0.5)pts.push({layer:k,label:LAYER_MAP[k]||k,delta:ch.delta,from:ch.from,to:ch.to,text:turn.text});
+    });
+  });
+  pts.sort((a,b)=>a.delta-b.delta);
+  if(!pts.length){
+    el.innerHTML='<div class="sec-label">Pain Points</div><div class="no-item">Keine negativen Signale</div>';
+    return;
+  }
+  const col_map={g:'var(--green)',y:'var(--yellow)',r:'var(--red)'};
+  const bg_map={g:'var(--green-bg)',y:'var(--yellow-bg)',r:'var(--red-bg)'};
+  el.innerHTML=`<div class="sec-label">Pain Points (${pts.length})</div>${pts.slice(0,5).map(p=>{
+    const a=ac(p.to);
+    return `<div class="pain-item">
+      <div class="pain-ico" style="background:${bg_map[a]};color:${col_map[a]}">↓</div>
+      <div class="pain-info">
+        <div class="pain-layer" style="color:${col_map[a]}">${p.label}</div>
+        <div class="pain-txt">${trunc(p.text,55)}</div>
+      </div>
+      <div class="pain-d">${p.delta.toFixed(1)}</div>
+    </div>`;
+  }).join('')}`;
+}
+
+// ─── TRAJECTORY ───
+function renderTrajectory(traj){
+  const el=document.getElementById('traj-section');
+  if(!el)return;
+  if(!traj.length){
+    el.innerHTML='<div class="sec-label">Score Verlauf</div><div class="no-item">Noch keine Daten</div>';
+    return;
+  }
+  // Sparklines per layer
+  const sparklines=LAYERS.map(({key,de})=>{
+    const vals=traj.map(t=>t.scores[key]??5);
+    const minV=Math.min(...vals).toFixed(1),maxV=Math.max(...vals).toFixed(1);
+    const lastV=vals[vals.length-1];
+    const svg=makeSVG(vals,310,22);
+    return `<div class="traj-layer">
+      <div class="traj-head">
+        <span class="traj-lname" style="color:${col(lastV)}">${de}</span>
+        <span class="traj-range">${minV} → ${maxV}</span>
+      </div>
+      <div class="traj-track">${svg}</div>
+    </div>`;
+  }).join('');
+
+  // Key events
+  const evts=[];
+  traj.forEach((turn,i)=>{
+    Object.entries(turn.changes||{}).forEach(([k,ch])=>{
+      if(Math.abs(ch.delta)>=0.5)evts.push({layer:k,label:LAYER_MAP[k]||k,...ch,text:turn.text,dir:turn.direction,turn:i+1});
+    });
+  });
+  evts.sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta));
+
+  const evHtml=evts.slice(0,6).map(ev=>{
+    const pos=ev.delta>0;
+    const c=pos?'var(--green)':'var(--red)';
+    const sign=pos?'+':'';
+    return `<div class="traj-ev ${pos?'pos':'neg'}">
+      <div class="traj-ev-meta">
+        <span class="traj-ev-l" style="color:${c}">${ev.label}</span>
+        <span class="traj-ev-c" style="color:${c}">${sign}${ev.delta.toFixed(1)} (${ev.from}→${ev.to})</span>
+      </div>
+      <div class="traj-ev-t">${ev.dir==='incoming'?'↙':'↗'} Turn ${ev.turn}: "${trunc(ev.text,65)}"</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML=`<div class="sec-label">Score Verlauf</div>
+    ${sparklines}
+    ${evHtml?`<div class="traj-events"><div class="sec-label" style="margin-top:8px">Schlüssel-Momente</div>${evHtml}</div>`:''}`;
+}
+
+function makeSVG(vals,w,h){
+  if(vals.length<2)return`<svg width="${w}" height="${h}"></svg>`;
+  const xs=w/(vals.length-1);
+  const pts=vals.map((v,i)=>`${(i*xs).toFixed(1)},${(h-v/10*h).toFixed(1)}`).join(' ');
+  const last=vals[vals.length-1];
+  const c=last>=8?'var(--green)':last>=4?'var(--yellow)':'var(--red)';
+  const lx=((vals.length-1)*xs).toFixed(1);
+  const ly=(h-last/10*h).toFixed(1);
+  return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <polyline points="${pts}" fill="none" stroke="${c}" stroke-width="1.5" opacity=".85"/>
+    <circle cx="${lx}" cy="${ly}" r="2.5" fill="${c}"/>
+  </svg>`;
+}
+
+// ─── SYNC ───
+async function triggerSync(){
+  const btn=document.getElementById('sync-btn');
+  const lbl=document.getElementById('sync-label');
+  btn.className='running';lbl.textContent='Läuft…';
+  try{ await fetch('/api/sync',{method:'POST'}); pollSync(); }
+  catch(e){lbl.textContent='Fehler';}
+}
+async function pollSync(){
+  const btn=document.getElementById('sync-btn');
+  const lbl=document.getElementById('sync-label');
+  const check=async()=>{
+    try{
+      const s=await fetch('/api/sync/status').then(r=>r.json());
+      if(s.running){btn.className='running';lbl.textContent='Sync…';setTimeout(check,3000);}
+      else{
+        btn.className='done';lbl.textContent='Fertig ✓';
+        await loadContacts();
+        setTimeout(()=>{btn.className='';lbl.textContent='Sync';},4000);
+      }
+    }catch(e){}
+  };
+  check();
+}
+
+// ─── BOOT ───
+loadContacts();
+setInterval(loadContacts,30000);
+pollSync();
+</script>
+</body>
+</html>

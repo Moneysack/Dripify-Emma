@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+dripify_session.json
+*.png
+*_debug.html
+conversation_debug.html
+sidebar_debug.html
+inbox_content.html

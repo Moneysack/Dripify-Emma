@@ -1,0 +1,15 @@
+📁 emma-enterprise-system-v1.0/
+├── 00_emma_core.jsonl                    ← VERFASSUNG
+├── 01_state_layer.jsonl                 ← WAHRNEHMUNG 1
+├── 02_clarity_layer.jsonl               ← WAHRNEHMUNG 2 ⭐ (KOMPLETT)
+├── 03_trust_layer.jsonl                 ← GATE 1
+├── 04_ease_layer.jsonl                  ← GATE 2
+├── 05_momentum_layer.jsonl              ← GATE 3
+├── 06_authority_layer.jsonl             ← GATE 4
+├── 07_type_layer.jsonl                  ← MODULATION
+├── 08_decision_engine.jsonl             ← GEHIRN
+├── 09_conflict_resolver_engine.jsonl    ← ARBITER
+├── 10_layer_interaction_system.jsonl    ← REGELN
+├── 11_movement_system.jsonl             ← VALIDierung
+├── 12_product_backcasting_matrix.jsonl  ← MONETARISIERUNG
+└── 13_hybrid_persistent_execution_loop.jsonl ← BETRIEBSSYSTEM
