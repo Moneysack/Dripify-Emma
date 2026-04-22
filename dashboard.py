@@ -380,6 +380,8 @@ def _run_sync():
 
 @app.post("/api/sync")
 def trigger_sync():
+    if _ON_VERCEL:
+        return JSONResponse({"status": "not_available", "reason": "Sync runs locally, not on Vercel"})
     if _sync_status["running"]:
         return JSONResponse({"status": "already_running"})
     t = threading.Thread(target=_run_sync, daemon=True)
@@ -398,10 +400,16 @@ def serve():
     return HTMLResponse(p.read_text(encoding="utf-8")) if p.exists() else HTMLResponse("dashboard.html not found", 404)
 
 
-# ── Auto-sync scheduler ────────────────────────────────────────────────────────
+# ── Auto-sync scheduler (local only — disabled on Vercel serverless) ───────────
+import os as _os
+_ON_VERCEL = bool(_os.environ.get("VERCEL") or _os.environ.get("VERCEL_ENV"))
+
 @app.on_event("startup")
 async def start_scheduler():
-    """Start APScheduler to sync Dripify inbox every 5 minutes."""
+    """Start APScheduler to sync Dripify inbox every 5 minutes (local only)."""
+    if _ON_VERCEL:
+        log.info("Vercel environment detected — scheduler disabled (sync runs locally)")
+        return
     try:
         from apscheduler.schedulers.background import BackgroundScheduler
         scheduler = BackgroundScheduler(timezone="Europe/Berlin")
