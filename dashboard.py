@@ -14,6 +14,10 @@ import uvicorn
 sys.path.insert(0, str(Path(__file__).parent))
 os.chdir(Path(__file__).parent)
 
+# Read HTML at import time — ensures Vercel bundles the file (same trick as Ask-EINO)
+_HTML_PATH = Path(__file__).parent / "dashboard.html"
+_DASHBOARD_HTML: str = _HTML_PATH.read_text(encoding="utf-8") if _HTML_PATH.exists() else "<h1>dashboard.html not found</h1>"
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)-8s  %(name)s - %(message)s",
@@ -396,8 +400,7 @@ def sync_status():
 # ── serve HTML ─────────────────────────────────────────────────────────────────
 @app.get("/", response_class=HTMLResponse)
 def serve():
-    p = Path(__file__).parent / "dashboard.html"
-    return HTMLResponse(p.read_text(encoding="utf-8")) if p.exists() else HTMLResponse("dashboard.html not found", 404)
+    return HTMLResponse(_DASHBOARD_HTML)
 
 
 # ── Auto-sync scheduler (local only — disabled on Vercel serverless) ───────────

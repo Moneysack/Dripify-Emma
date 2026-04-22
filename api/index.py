@@ -1,16 +1,20 @@
-"""Vercel entrypoint — imports the FastAPI app from dashboard.py."""
+"""Vercel entrypoint — mirrors the Ask-EINO pattern."""
 import sys
 from pathlib import Path
 
-# Make project root importable
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
-# Must set working directory so dashboard.html and .env resolve correctly
 import os
 os.chdir(ROOT)
 
-# Patch: on Vercel there is no Playwright / no persistent scheduler.
-# Importing dashboard triggers @app.on_event("startup") only during
-# ASGI lifespan — Vercel serverless never runs it, so it's safe.
-from dashboard import app  # noqa: F401  (Vercel picks up `app`)
+try:
+    from dashboard import app
+except Exception as e:
+    from fastapi import FastAPI
+    from fastapi.responses import JSONResponse
+    app = FastAPI()
+
+    @app.get("/{path:path}")
+    def _err(path: str):
+        return JSONResponse({"initError": str(e), "type": type(e).__name__}, status_code=500)

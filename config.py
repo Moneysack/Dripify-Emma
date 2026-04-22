@@ -9,12 +9,12 @@ class Settings(BaseSettings):
     dripify_password: str = ""
 
     # OpenAI
-    openai_api_key: str
-    openai_assistant_id: str = ""  # nicht mehr benötigt, wird ignoriert
+    openai_api_key: str = ""
+    openai_assistant_id: str = ""
 
     # Supabase
-    supabase_url: str
-    supabase_service_key: str
+    supabase_url: str = ""
+    supabase_service_key: str = ""
 
     # Agent
     poll_interval_minutes: int = 10
