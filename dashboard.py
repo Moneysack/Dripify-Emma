@@ -25,8 +25,16 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-from database.client import get_db
-from config import settings
+try:
+    from database.client import get_db
+    from config import settings
+except Exception as _cfg_err:
+    import logging as _l
+    _l.getLogger(__name__).error("Config/DB import error: %s", _cfg_err)
+    settings = None  # type: ignore
+    def get_db():  # type: ignore
+        from fastapi import HTTPException
+        raise HTTPException(500, f"Configuration error: {_cfg_err}")
 
 app = FastAPI(title="Emma Dashboard")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
