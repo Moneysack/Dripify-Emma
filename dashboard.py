@@ -375,6 +375,82 @@ def get_trajectory(contact_id: str):
     return JSONResponse(history)
 
 
+# ── LLM Emma analysis ─────────────────────────────────────────────────────────
+@app.post("/api/contacts/{contact_id}/analyze")
+def analyze_contact(contact_id: str):
+    """Run full LLM-based Emma analysis on the conversation and persist results."""
+    from emma.analyzer import analyze_conversation
+    from datetime import datetime, timezone
+
+    db = get_db()
+    msgs = (
+        db.table("messages")
+        .select("direction,text,created_at")
+        .eq("contact_id", contact_id)
+        .order("created_at", desc=False)
+        .execute()
+        .data
+    )
+    if not msgs:
+        raise HTTPException(400, "Keine Nachrichten für diesen Kontakt")
+
+    result = analyze_conversation(msgs)
+
+    ts = datetime.now(timezone.utc).isoformat()
+    result["analyzed_at"] = ts
+
+    # Base columns (always exist in schema)
+    base_update = {
+        "state_score":          result["state_score"],
+        "clarity_score":        result["clarity_score"],
+        "ease_score":           result["ease_score"],
+        "trust_score":          result["trust_score"],
+        "momentum_score":       result["momentum_score"],
+        "authority_score":      result["authority_score"],
+        "authority_confidence": result["authority_confidence"],
+        "decision_type":        result["decision_type"],
+        "current_blocker":      result["current_blocker"],
+        "current_intervention": result["current_intervention"],
+        "flow_mode":            result["flow_mode"],
+    }
+
+    # Extended columns — only present after running database/add_analyzer_columns.sql
+    extended = {col: result[col] for col in (
+        "trust_conf","clarity_conf","ease_conf","momentum_conf","state_conf",
+        "state_cluster","movement_score","movement_stability","output_mode",
+        "escalation_eligible","pain_points","prospect_summary","analyzed_at",
+    ) if col in result}
+
+    try:
+        db.table("emma_state").update({**base_update, **extended}).eq("contact_id", contact_id).execute()
+    except Exception:
+        # Fallback: extended columns not yet migrated — save only base
+        try:
+            db.table("emma_state").update(base_update).eq("contact_id", contact_id).execute()
+        except Exception as e2:
+            log.error("emma_state update failed: %s", e2)
+
+    return JSONResponse(result)
+
+
+# ── LLM phase history analysis ────────────────────────────────────────────────
+@app.get("/api/contacts/{contact_id}/analyze-history")
+def analyze_history(contact_id: str):
+    """Split conversation into 3 phases and return trend analysis."""
+    from emma.analyzer import analyze_phases
+
+    db = get_db()
+    msgs = (
+        db.table("messages")
+        .select("direction,text,created_at")
+        .eq("contact_id", contact_id)
+        .order("created_at", desc=False)
+        .execute()
+        .data
+    )
+    return JSONResponse(analyze_phases(msgs))
+
+
 # ── Dripify sync ───────────────────────────────────────────────────────────────
 def _run_sync():
     _sync_status["running"] = True

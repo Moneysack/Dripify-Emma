@@ -287,14 +287,73 @@ body {
 .g { color: var(--green); } .bg { background: var(--green); }
 .y { color: var(--yellow); } .by { background: var(--yellow); }
 .r { color: var(--red); }   .br { background: var(--red); }
+/* Analyze button */
+#analyze-btn {
+  display: flex; align-items: center; gap: 6px;
+  width: calc(100% - 32px); margin: 10px 16px 0;
+  padding: 8px 14px; border-radius: var(--radius-sm);
+  background: linear-gradient(135deg,#1e1b4b,#312e81);
+  border: 1px solid rgba(99,102,241,.4); color: var(--accent2);
+  font-size: 11px; font-weight: 600; cursor: pointer; transition: opacity .2s;
+  letter-spacing: .3px;
+}
+#analyze-btn:hover { opacity: .85; }
+#analyze-btn:disabled { opacity: .4; cursor: not-allowed; }
+#analyze-btn.loading { animation: pulse 1s infinite; }
+/* State cluster + output mode chips */
+.cluster-chip {
+  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+  background: rgba(99,102,241,.15); color: var(--accent2); letter-spacing: .5px;
+}
+.om-chip {
+  font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
+  letter-spacing: .5px;
+}
+.om-CRITICAL   { background: rgba(248,113,113,.15); color: var(--red); }
+.om-SAFE       { background: rgba(245,158,11,.15); color: var(--yellow); }
+.om-UNCERTAIN  { background: rgba(148,163,184,.1); color: var(--txt1); }
+.om-NORMAL     { background: rgba(99,102,241,.1); color: var(--accent2); }
+.om-ESCALATION_ELIGIBLE { background: rgba(34,197,94,.15); color: var(--green); }
+/* Confidence band under bar */
+.lrow-conf { height: 2px; border-radius: 2px; margin-top: 2px; background: rgba(255,255,255,.06); overflow: hidden; }
+.lrow-conf-fill { height: 100%; border-radius: 2px; background: rgba(255,255,255,.2); transition: width .5s; }
+/* Prospect summary */
+.prospect-summary {
+  font-size: 11px; color: var(--txt1); line-height: 1.55;
+  padding: 10px 14px; background: var(--bg2);
+  border-radius: var(--radius-sm); border: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+/* History phases */
+#history-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.phase-row { display: flex; gap: 6px; margin-bottom: 8px; }
+.phase-col { flex: 1; background: var(--bg2); border-radius: var(--radius-sm); padding: 8px 10px; border: 1px solid var(--border); }
+.phase-label { font-size: 9px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--txt2); margin-bottom: 6px; }
+.phase-delta { font-family: 'JetBrains Mono',monospace; font-size: 10px; }
+.delta-pos { color: var(--green); }
+.delta-neg { color: var(--red); }
+.delta-neu { color: var(--txt2); }
+.trend-chip {
+  display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px;
+  border-radius: 20px; margin-top: 6px;
+}
+.trend-positiv { background: rgba(34,197,94,.15); color: var(--green); }
+.trend-negativ { background: rgba(248,113,113,.15); color: var(--red); }
+.trend-gemischt { background: rgba(245,158,11,.15); color: var(--yellow); }
+.trend-stabil   { background: rgba(99,102,241,.1); color: var(--accent2); }
 /* Pain points */
 #pain-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
-.pain-item { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.03); }
+.pain-item { display: flex; gap: 8px; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,.03); }
 .pain-item:last-child { border-bottom: none; }
 .pain-ico { width: 22px; height: 22px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; font-weight: 700; }
 .pain-info { flex: 1; min-width: 0; }
 .pain-layer { font-size: 11px; font-weight: 600; }
-.pain-txt { font-size: 10px; color: var(--txt2); margin-top: 1px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pain-txt { font-size: 10px; color: var(--txt2); margin-top: 1px; line-height: 1.4; }
+.pain-quote { font-size: 10px; color: var(--txt2); font-style: italic; margin-top: 3px; padding-left: 6px; border-left: 2px solid var(--border); }
+.pain-sev { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; flex-shrink: 0; }
+.sev-hoch   { background: rgba(248,113,113,.15); color: var(--red); }
+.sev-mittel { background: rgba(245,158,11,.15); color: var(--yellow); }
+.sev-niedrig { background: rgba(99,102,241,.1); color: var(--accent2); }
 .pain-d { font-family: 'JetBrains Mono',monospace; font-size: 10px; flex-shrink: 0; color: var(--red); }
 .no-item { font-size: 11px; color: var(--txt2); text-align: center; padding: 10px 0; }
 /* Trajectory */
@@ -389,12 +448,12 @@ body {
 
 <script>
 const LAYERS = [
-  {key:'state_score',    de:'Zustand'},
-  {key:'clarity_score',  de:'Klarheit'},
-  {key:'ease_score',     de:'Leichtigkeit'},
-  {key:'trust_score',    de:'Vertrauen'},
-  {key:'momentum_score', de:'Momentum'},
-  {key:'authority_score',de:'Autorität'},
+  {key:'trust_score',     conf:'trust_conf',     de:'Vertrauen'},
+  {key:'clarity_score',   conf:'clarity_conf',   de:'Klarheit'},
+  {key:'authority_score', conf:'authority_conf',  de:'Autorität'},
+  {key:'ease_score',      conf:'ease_conf',      de:'Leichtigkeit'},
+  {key:'momentum_score',  conf:'momentum_conf',  de:'Momentum'},
+  {key:'state_score',     conf:'state_conf',     de:'Zustand'},
 ];
 const LAYER_MAP = Object.fromEntries(LAYERS.map(l=>[l.key,l.de]));
 const INTERVENTIONS = {
@@ -407,8 +466,11 @@ const INTERVENTIONS = {
   CLARIFY:'Klären — Offene Fragen ansprechen',
   STRUCTURE:'Struktur geben — Klaren Rahmen bieten',
   ROUTE:'Weiterleiten — Entscheider einbeziehen',
+  ESCALATION:'Eskalation — Nächsten Schritt vorschlagen',
 };
 const DTYPE_LABELS = {THINKER:'Denker',DOER:'Macher',VISUAL:'Visuell',SPEAKER:'Kommunikator',MIXED:'Gemischt'};
+const CLUSTER_LABELS = {S0:'S0 · Kein Bewusstsein',S1:'S1 · Passiv-latent',S2:'S2 · Aktivierungslücke',S3:'S3 · Begrenzte Ausführung',S4:'S4 · Commitment-bereit',S5:'S5 · Multiplikator'};
+const MOVEMENT_LABELS = {M0:'M0 · Keine Bewegung',M1:'M1 · Einmalig',M2:'M2 · Wiederholt',M3:'M3 · Stabil'};
 
 let allContacts = [], selectedId = null, msgPollId = null;
 
@@ -568,6 +630,103 @@ function renderEmmaBar(c){
   <div><strong>${blocker} · ${interv}</strong> — ${INTERVENTIONS[interv]||interv}</div>`;
 }
 
+// ─── EMMA FULL ANALYSIS ───
+async function analyzeContact(){
+  if(!selectedId)return;
+  const btn=document.getElementById('analyze-btn');
+  if(!btn)return;
+  btn.disabled=true;
+  btn.classList.add('loading');
+  btn.innerHTML=`<div class="spinner" style="width:11px;height:11px;border-width:1.5px;display:inline-block"></div> Analysiere…`;
+  try{
+    const[r,rh]=await Promise.all([
+      fetch(`/api/contacts/${selectedId}/analyze`,{method:'POST'}),
+      fetch(`/api/contacts/${selectedId}/analyze-history`),
+    ]);
+    if(!r.ok){const e=await r.json();throw new Error(e.detail||r.status);}
+    const data=await r.json();
+    const hist=await rh.json();
+
+    // Update local contact state
+    const c=allContacts.find(x=>x.id===selectedId);
+    if(c){
+      c.state={...c.state,...data,
+        trust_score:data.trust_score,clarity_score:data.clarity_score,
+        ease_score:data.ease_score,momentum_score:data.momentum_score,
+        authority_score:data.authority_score,state_score:data.state_score,
+        current_blocker:data.current_blocker,current_intervention:data.current_intervention,
+        flow_mode:data.flow_mode,output_mode:data.output_mode,
+        state_cluster:data.state_cluster,movement_stability:data.movement_stability,
+        escalation_eligible:data.escalation_eligible,
+        prospect_summary:data.prospect_summary,pain_points:data.pain_points||[],
+        analyzed_at:data.analyzed_at||new Date().toISOString(),
+      };
+      c.flow_mode=data.flow_mode;
+      c.blocker=data.current_blocker;
+      // Re-render right panel in-place without full reload
+      const de=document.getElementById('emma-decision');
+      const ls=document.getElementById('layer-section');
+      const ps=document.getElementById('pain-section');
+      const hs=document.getElementById('history-section');
+      if(de) de.innerHTML=renderDecisionHTML(c.flow_mode||'HOLD',c.blocker||'—',data.current_intervention||'—',data.decision_type||'MIXED',c.state);
+      if(ls) ls.innerHTML=`<div class="sec-label">7 Layer Scores</div>${data.prospect_summary?`<div class="prospect-summary">${esc(data.prospect_summary)}</div>`:''
+      }${renderLayerGridHTML(c.state)}`;
+      if(hs) renderHistoryAnalysis(hist);
+      if(ps) renderPainPointsFromState(c.state);
+      renderEmmaBar(c);
+      renderContactList(allContacts);
+    }
+  }catch(e){
+    alert('Analyse-Fehler: '+e.message);
+  }finally{
+    const b=document.getElementById('analyze-btn');
+    if(b){b.disabled=false;b.classList.remove('loading');b.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Emma KI-Analyse starten`;}
+  }
+}
+
+function renderHistoryAnalysis(hist){
+  const el=document.getElementById('history-section');
+  if(!el||!hist||!hist.phases||!hist.phases.length){if(el)el.innerHTML='';return;}
+  const trendCls='trend-'+(hist.overall_trend||'stabil');
+  const LAYER_KEYS={trust_score:'Vertrauen',clarity_score:'Klarheit',ease_score:'Leichtigkeit',momentum_score:'Momentum',authority_score:'Autorität',state_score:'Zustand'};
+  const phaseHtml=hist.phases.map(p=>{
+    const deltas=Object.entries(p.deltas||{}).map(([k,d])=>{
+      const cls=d>0?'delta-pos':d<0?'delta-neg':'delta-neu';
+      const sign=d>0?'+':'';
+      return `<div class="phase-delta ${cls}">${(LAYER_KEYS[k]||k).slice(0,4)} ${sign}${d}</div>`;
+    }).join('');
+    return `<div class="phase-col">
+      <div class="phase-label">${p.label}</div>
+      ${deltas||'<div class="phase-delta delta-neu">—</div>'}
+      <div style="font-size:9px;color:var(--txt2);margin-top:4px">${p.message_count} Msg · ${p.blocker||'—'}</div>
+    </div>`;
+  }).join('');
+  el.innerHTML=`<div class="sec-label">Gesprächsverlauf<span class="trend-chip ${trendCls}" style="margin-left:8px">${hist.overall_trend}</span></div>
+  <div class="phase-row">${phaseHtml}</div>
+  ${hist.key_turning_point?`<div style="font-size:10px;color:var(--txt2);margin-top:4px">⚡ Wendepunkt: ${hist.key_turning_point}</div>`:''}`;
+}
+
+function renderPainPointsFromState(state){
+  const pts=state&&state.pain_points||[];
+  const el=document.getElementById('pain-section');
+  if(!el)return;
+  if(!pts.length){el.innerHTML='<div class="sec-label">Pain Points</div><div class="no-item">KI-Analyse noch nicht ausgeführt</div>';return;}
+  const html=pts.map(p=>{
+    const sev=p.severity||'mittel';
+    return `<div class="pain-item">
+      <div class="pain-ico" style="background:rgba(248,113,113,.1);color:var(--red)">↓</div>
+      <div class="pain-info">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+          <div class="pain-layer">${p.pain}</div>
+          <span class="pain-sev sev-${sev}">${sev}</span>
+        </div>
+        ${p.quote?`<div class="pain-quote">"${esc(p.quote)}"</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  el.innerHTML=`<div class="sec-label">Pain Points (${pts.length})</div>${html}`;
+}
+
 // ─── AI REPLY ───
 async function generateReply(){
   if(!selectedId)return;
@@ -643,13 +802,19 @@ function renderProfile(c,traj){
       <div class="p-company">${c.campaign_id||'LinkedIn'}</div>
       <div class="p-chips"><span class="p-chip">${c.turn_count||0} Turns</span></div>
     </div>
+    <button id="analyze-btn" onclick="analyzeContact()" title="KI-Vollanalyse mit Emma-Framework">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Emma KI-Analyse starten
+    </button>
     <div id="emma-decision">
-      ${renderDecisionHTML(flow,blocker,interv,dtype)}
+      ${renderDecisionHTML(flow,blocker,interv,dtype,state)}
     </div>
     <div id="layer-section" class="p-section">
       <div class="sec-label">7 Layer Scores</div>
+      ${state.prospect_summary?`<div class="prospect-summary">${esc(state.prospect_summary)}</div>`:''}
       ${renderLayerGridHTML(state)}
     </div>
+    <div id="history-section" class="p-section"></div>
     <div id="pain-section" class="p-section"></div>
     <div id="traj-section" class="p-section"></div>
   `;
@@ -657,29 +822,45 @@ function renderProfile(c,traj){
   renderTrajectory(traj);
 }
 
-function renderDecisionHTML(flow,blocker,interv,dtype){
-  return `<div class="sec-label">Emma Entscheidung</div>
+function renderDecisionHTML(flow,blocker,interv,dtype,state){
+  const cluster=state&&state.state_cluster;
+  const om=state&&state.output_mode;
+  const mv=state&&state.movement_stability;
+  const esc=state&&state.escalation_eligible;
+  const analyzed=state&&state.analyzed_at;
+  return `<div class="sec-label">Emma Entscheidung${analyzed?'<span style="float:right;font-weight:400;color:var(--green);font-size:9px">✓ KI analysiert</span>':''}</div>
   <div class="drow">
     <span class="flow-chip flow-${flow}">${flow}</span>
     ${blocker&&blocker!=='—'?`<span class="blocker-badge">${blocker}</span>`:''}
-    <span class="dtype-badge">${DTYPE_LABELS[dtype]||dtype}</span>
+    ${om?`<span class="om-chip om-${om}">${om}</span>`:''}
   </div>
-  <div class="interv-line">Intervention: <span>${interv}</span></div>`;
+  <div class="drow" style="margin-top:4px">
+    ${cluster?`<span class="cluster-chip">${CLUSTER_LABELS[cluster]||cluster}</span>`:''}
+    ${mv?`<span class="dtype-badge">${MOVEMENT_LABELS[mv]||mv}</span>`:''}
+    <span class="dtype-badge">${DTYPE_LABELS[dtype]||dtype}</span>
+    ${esc?`<span class="dtype-badge" style="color:var(--green)">↑ Eskalierbar</span>`:''}
+  </div>
+  <div class="interv-line" style="margin-top:6px">Intervention: <span>${interv&&interv!=='—'?interv:'—'}</span></div>`;
 }
 
 function renderLayerGridHTML(state){
   const blocker=(state.current_blocker||'').toUpperCase();
-  return LAYERS.map(({key,de})=>{
+  return LAYERS.map(({key,conf,de})=>{
     const v=state[key]??5;
+    const cv=state[conf]??state.authority_confidence??0.5;
     const a=ac(v);
     const pct=(v/10*100).toFixed(0);
-    const isBlocker=blocker&&de.toUpperCase().startsWith(blocker.slice(0,4));
+    const cpct=(cv*100).toFixed(0);
+    const isBlocker=blocker&&(blocker===de.toUpperCase().slice(0,blocker.length)||de.toUpperCase().includes(blocker));
     return `<div class="layer-row">
       <div class="lrow-label${isBlocker?' blocker':''}">
         <span style="font-size:9px">${dot(v)}</span>
         ${isBlocker?'⚠ ':''}${de}
       </div>
-      <div class="lrow-bar"><div class="lrow-fill b${a}" style="width:${pct}%"></div></div>
+      <div style="flex:1">
+        <div class="lrow-bar"><div class="lrow-fill b${a}" style="width:${pct}%"></div></div>
+        <div class="lrow-conf"><div class="lrow-conf-fill" style="width:${cpct}%"></div></div>
+      </div>
       <div class="lrow-score ${a}">${v.toFixed(1)}<span class="lscale">/10</span></div>
     </div>`;
   }).join('');
@@ -690,14 +871,21 @@ function updateDecisionLayers(c){
   const ls=document.getElementById('layer-section');
   if(!de||!ls)return;
   const state=c.state||{};
-  de.innerHTML=renderDecisionHTML(c.flow_mode||state.flow_mode||'HOLD',c.blocker||state.current_blocker||'—',state.current_intervention||'—',state.decision_type||'MIXED');
+  de.innerHTML=renderDecisionHTML(c.flow_mode||state.flow_mode||'HOLD',c.blocker||state.current_blocker||'—',state.current_intervention||'—',state.decision_type||'MIXED',state);
   ls.innerHTML=`<div class="sec-label">7 Layer Scores</div>${renderLayerGridHTML(state)}`;
 }
 
 // ─── PAIN POINTS ───
 function renderPainPoints(traj){
+  // If the contact was already LLM-analyzed, use state pain_points (shown by renderPainPointsFromState)
+  const c=allContacts.find(x=>x.id===selectedId);
+  if(c&&c.state&&c.state.analyzed_at&&(c.state.pain_points||[]).length){
+    renderPainPointsFromState(c.state);
+    return;
+  }
   const el=document.getElementById('pain-section');
   if(!el)return;
+  // Fallback: keyword-based signal pain points from trajectory
   const pts=[];
   traj.forEach(turn=>{
     if(turn.direction!=='incoming')return;
@@ -707,18 +895,18 @@ function renderPainPoints(traj){
   });
   pts.sort((a,b)=>a.delta-b.delta);
   if(!pts.length){
-    el.innerHTML='<div class="sec-label">Pain Points</div><div class="no-item">Keine negativen Signale</div>';
+    el.innerHTML=`<div class="sec-label">Pain Points</div><div class="no-item">Keine Signale erkannt — KI-Analyse für tiefere Auswertung</div>`;
     return;
   }
   const col_map={g:'var(--green)',y:'var(--yellow)',r:'var(--red)'};
   const bg_map={g:'var(--green-bg)',y:'var(--yellow-bg)',r:'var(--red-bg)'};
-  el.innerHTML=`<div class="sec-label">Pain Points (${pts.length})</div>${pts.slice(0,5).map(p=>{
+  el.innerHTML=`<div class="sec-label">Pain Points (${pts.length}) <span style="font-size:9px;color:var(--txt2);font-weight:400">· keyword-basiert</span></div>${pts.slice(0,5).map(p=>{
     const a=ac(p.to);
     return `<div class="pain-item">
       <div class="pain-ico" style="background:${bg_map[a]};color:${col_map[a]}">↓</div>
       <div class="pain-info">
         <div class="pain-layer" style="color:${col_map[a]}">${p.label}</div>
-        <div class="pain-txt">${trunc(p.text,55)}</div>
+        <div class="pain-txt">${trunc(p.text,70)}</div>
       </div>
       <div class="pain-d">${p.delta.toFixed(1)}</div>
     </div>`;
