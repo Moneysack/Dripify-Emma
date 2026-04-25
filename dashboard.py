@@ -92,6 +92,8 @@ def list_contacts():
             "location":        c.get("location", ""),
             "linkedin_url":    c.get("linkedin_url", ""),
             "dripify_contact_id": c.get("dripify_contact_id", ""),
+            "email":           c.get("email", ""),
+            "connections_count": c.get("connections_count", ""),
             "created_at":      c.get("created_at", ""),
             "turn_count":      conv.get("turn_count", 0),
             "last_message":    lm.get("text", "")[:80],
@@ -155,10 +157,15 @@ def send_message(contact_id: str, payload: SendPayload):
 
     # Lookup dripify_contact_id for Playwright navigation
     contact_row = db.table("contacts").select("dripify_contact_id").eq("id", contact_id).execute().data
-    dripify_id  = contact_row[0]["dripify_contact_id"] if contact_row else None
+    dripify_id  = (contact_row[0].get("dripify_contact_id") or "").strip() if contact_row else ""
 
     # Send via Playwright (best-effort — store regardless)
-    dripify_result = {"ok": False, "error": "no dripify_id"}
+    if not dripify_id:
+        dripify_result = {"ok": False, "error": "Dripify-ID fehlt — bitte Sync ausführen"}
+    elif _ON_VERCEL:
+        dripify_result = {"ok": False, "error": "Senden nur über lokalen Server möglich (nicht Vercel)"}
+    else:
+        dripify_result = {"ok": False, "error": "Unbekannter Fehler"}
     if dripify_id and not _ON_VERCEL:
         try:
             from dripify.sender import send_message as dripify_send
@@ -255,7 +262,7 @@ def refresh_profile(contact_id: str):
 
     if profile:
         update = {}
-        for field in ("avatar_url", "title", "company_name", "location", "linkedin_url"):
+        for field in ("avatar_url", "title", "company_name", "location", "linkedin_url", "email", "connections_count"):
             if profile.get(field):
                 update[field] = profile[field]
         if update:

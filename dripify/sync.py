@@ -263,11 +263,13 @@ class DripifySync:
                 time.sleep(2)
 
                 # Scrape full profile from the right panel
-                avatar_url   = conv.get("avatar_url", "")
-                title        = ""
-                company_name = ""
-                location     = ""
-                linkedin_url = ""
+                avatar_url       = conv.get("avatar_url", "")
+                title            = ""
+                company_name     = ""
+                location         = ""
+                linkedin_url     = ""
+                email            = ""
+                connections_count = ""
                 try:
                     from dripify.sender import _PROFILE_SELS
                     # Avatar
@@ -280,18 +282,24 @@ class DripifySync:
                             if src and "licdn.com" in src:
                                 avatar_url = src
                                 break
-                    # Text profile fields
+                    # Text / href profile fields
                     for field, sels in _PROFILE_SELS.items():
                         for sel in sels:
                             try:
                                 el = page.query_selector(sel)
                                 if el:
-                                    val = el.get_attribute("href") if field == "linkedin_url" else (el.inner_text() or "").strip()
+                                    if field in ("linkedin_url", "email"):
+                                        href = el.get_attribute("href") or ""
+                                        val = href.replace("mailto:", "").strip() if field == "email" else href
+                                    else:
+                                        val = (el.inner_text() or "").strip()
                                     if val:
-                                        if field == "title":        title = val
-                                        elif field == "company_name": company_name = val
-                                        elif field == "location":    location = val
-                                        elif field == "linkedin_url": linkedin_url = val
+                                        if field == "title":             title = val
+                                        elif field == "company_name":    company_name = val
+                                        elif field == "location":        location = val
+                                        elif field == "linkedin_url":    linkedin_url = val
+                                        elif field == "email":           email = val
+                                        elif field == "connections_count": connections_count = val
                                         break
                             except Exception:
                                 continue
@@ -310,11 +318,13 @@ class DripifySync:
                     contact_id = existing[0]["id"]
                     summary["contacts_existing"] += 1
                     update_data = {"linkedin_name": name}
-                    if avatar_url:    update_data["avatar_url"]   = avatar_url
-                    if title:         update_data["title"]         = title
-                    if company_name:  update_data["company_name"]  = company_name
-                    if location:      update_data["location"]      = location
-                    if linkedin_url:  update_data["linkedin_url"]  = linkedin_url
+                    if avatar_url:        update_data["avatar_url"]        = avatar_url
+                    if title:             update_data["title"]              = title
+                    if company_name:      update_data["company_name"]       = company_name
+                    if location:          update_data["location"]           = location
+                    if linkedin_url:      update_data["linkedin_url"]       = linkedin_url
+                    if email:             update_data["email"]              = email
+                    if connections_count: update_data["connections_count"]  = connections_count
                     try:
                         db.table("contacts").update(update_data).eq("id", contact_id).execute()
                     except Exception:
@@ -324,13 +334,15 @@ class DripifySync:
                         db.table("contacts")
                         .insert({
                             "dripify_contact_id": conv_id,
-                            "linkedin_name":  name,
-                            "campaign_id":    "",
-                            "avatar_url":     avatar_url,
-                            "title":          title,
-                            "company_name":   company_name,
-                            "location":       location,
-                            "linkedin_url":   linkedin_url,
+                            "linkedin_name":      name,
+                            "campaign_id":        "",
+                            "avatar_url":         avatar_url,
+                            "title":              title,
+                            "company_name":       company_name,
+                            "location":           location,
+                            "linkedin_url":       linkedin_url,
+                            "email":              email,
+                            "connections_count":  connections_count,
                         })
                         .execute()
                         .data[0]

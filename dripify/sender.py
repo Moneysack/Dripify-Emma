@@ -61,6 +61,18 @@ _PROFILE_SELS = {
         ".lead-card a[href*='linkedin.com']",
         "[class*='lead'] a[href*='linkedin.com/in/']",
     ],
+    "email": [
+        ".messages__lead-card a[href^='mailto:']",
+        ".lead-card a[href^='mailto:']",
+        "[class*='lead'] a[href^='mailto:']",
+        "[class*='email'] a[href^='mailto:']",
+    ],
+    "connections_count": [
+        ".messages__lead-card [class*='connection']",
+        ".lead-card [class*='connection']",
+        "[class*='lead'] [class*='connection']",
+        "[class*='lead'] [class*='follower']",
+    ],
 }
 
 
@@ -207,14 +219,15 @@ def scrape_profile(dripify_contact_id: str) -> dict:
             except Exception:
                 pass
 
-        # Text fields
+        # Text / href fields
         for field, sels in _PROFILE_SELS.items():
             for sel in sels:
                 try:
                     el = page.query_selector(sel)
                     if el:
-                        if field == "linkedin_url":
-                            val = el.get_attribute("href") or ""
+                        if field in ("linkedin_url", "email"):
+                            href = el.get_attribute("href") or ""
+                            val = href.replace("mailto:", "").strip() if field == "email" else href
                         else:
                             val = (el.inner_text() or "").strip()
                         if val:

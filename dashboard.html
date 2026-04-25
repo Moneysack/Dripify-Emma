@@ -72,6 +72,23 @@ body {
 .running #sync-label { color: var(--yellow); }
 .done #sync-label { color: var(--green); }
 @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+/* Sidebar tabs */
+.tab-bar {
+  display: flex; border-bottom: 1px solid var(--border);
+}
+.tab-btn {
+  flex: 1; padding: 8px 6px; font-size: 11px; font-weight: 600;
+  background: none; border: none; color: var(--txt2); cursor: pointer;
+  border-bottom: 2px solid transparent; transition: all .15s;
+  font-family: 'Outfit',sans-serif; letter-spacing: .2px;
+}
+.tab-btn.active { color: var(--accent2); border-bottom-color: var(--accent); }
+.tab-btn:hover { color: var(--txt0); }
+.unread-count {
+  display: inline-block; background: var(--accent); color: #fff;
+  font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 10px;
+  margin-left: 4px; vertical-align: middle; line-height: 1.6;
+}
 .search-wrap {
   padding: 10px 12px; border-bottom: 1px solid var(--border);
 }
@@ -119,6 +136,23 @@ body {
 .c-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
 .c-time { font-size: 10px; color: var(--txt2); }
 .no-items { text-align: center; padding: 40px 20px; color: var(--txt2); font-size: 13px; }
+/* Unread state */
+.contact-item.unread .c-name { font-weight: 700; color: var(--txt0); }
+.contact-item.unread .c-last { color: var(--txt1); font-weight: 500; }
+.unread-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+/* Profile detail fields */
+.p-detail-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.p-detail-row { margin-bottom: 12px; }
+.p-detail-row:last-child { margin-bottom: 0; }
+.p-detail-label { font-size: 10px; color: var(--txt2); margin-bottom: 2px; font-weight: 500; letter-spacing: .3px; }
+.p-detail-value { font-size: 12px; font-weight: 600; color: var(--txt0); line-height: 1.4; }
+.p-email-row { display: flex; align-items: center; gap: 8px; }
+.p-copy-btn {
+  background: none; border: none; color: var(--txt2); cursor: pointer;
+  padding: 2px; border-radius: 4px; transition: color .15s; flex-shrink: 0;
+}
+.p-copy-btn:hover { color: var(--accent2); }
+.p-copy-btn.copied { color: var(--green); }
 
 /* ── CENTER CHAT ── */
 #chat {
@@ -511,6 +545,10 @@ body {
       <span id="sync-label">Sync</span>
     </button>
   </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-all" onclick="setTab('all')">Alle <span id="count-all" class="unread-count" style="display:none"></span></button>
+    <button class="tab-btn" id="tab-unread" onclick="setTab('unread')">Ungelesen <span id="count-unread" class="unread-count"></span></button>
+  </div>
   <div class="search-wrap">
     <input type="text" id="search-input" placeholder="Kontakt suchen..." oninput="filterContacts(this.value)">
   </div>
@@ -591,7 +629,7 @@ const DTYPE_LABELS = {THINKER:'Denker',DOER:'Macher',VISUAL:'Visuell',SPEAKER:'K
 const CLUSTER_LABELS = {S0:'S0 · Kein Bewusstsein',S1:'S1 · Passiv-latent',S2:'S2 · Aktivierungslücke',S3:'S3 · Begrenzte Ausführung',S4:'S4 · Commitment-bereit',S5:'S5 · Multiplikator'};
 const MOVEMENT_LABELS = {M0:'M0 · Keine Bewegung',M1:'M1 · Einmalig',M2:'M2 · Wiederholt',M3:'M3 · Stabil'};
 
-let allContacts = [], selectedId = null, msgPollId = null;
+let allContacts = [], selectedId = null, msgPollId = null, activeTab = 'all';
 
 // ─── HELPERS ───
 function ac(v) { return v>=8?'g':v>=4?'y':'r'; }
@@ -629,27 +667,49 @@ async function loadContacts(){
   try{
     const r=await fetch('/api/contacts');
     allContacts=await r.json();
-    renderContactList(allContacts);
+    updateTabCounts();
+    applyFilter();
     if(selectedId){
       const c=allContacts.find(x=>x.id===selectedId);
       if(c)updateDecisionLayers(c);
     }
   }catch(e){console.error(e);}
 }
+function setTab(tab){
+  activeTab=tab;
+  document.getElementById('tab-all').className='tab-btn'+(tab==='all'?' active':'');
+  document.getElementById('tab-unread').className='tab-btn'+(tab==='unread'?' active':'');
+  applyFilter();
+}
+function updateTabCounts(){
+  const unread=allContacts.filter(c=>c.last_direction==='incoming').length;
+  const cu=document.getElementById('count-unread');
+  if(cu)cu.textContent=unread||'';
+}
+function applyFilter(){
+  const q=(document.getElementById('search-input')||{}).value||'';
+  let list=allContacts;
+  if(activeTab==='unread')list=list.filter(c=>c.last_direction==='incoming');
+  if(q)list=list.filter(c=>c.linkedin_name.toLowerCase().includes(q.toLowerCase()));
+  renderContactList(list);
+}
 function filterContacts(q){
-  renderContactList(q?allContacts.filter(c=>c.linkedin_name.toLowerCase().includes(q.toLowerCase())):allContacts);
+  applyFilter();
 }
 function renderContactList(list){
   const el=document.getElementById('contact-list');
-  if(!list.length){el.innerHTML='<div class="no-items">Keine Kontakte.<br>Drücke Sync.</div>';return;}
+  if(!list.length){
+    el.innerHTML=`<div class="no-items">${activeTab==='unread'?'Keine ungelesenen Nachrichten.':'Keine Kontakte.<br>Drücke Sync.'}</div>`;
+    return;
+  }
+  const col_map={g:'var(--green)',y:'var(--yellow)',r:'var(--red)'};
   el.innerHTML=list.map(c=>{
     const a=ac(overall(c.state));
-    const col_map={g:'var(--green)',y:'var(--yellow)',r:'var(--red)'};
-    const prefix=c.last_direction==='outgoing'?'Du: ':'';
-    const newCls=c.last_direction==='incoming'?' new':'';
+    const isUnread=c.last_direction==='incoming';
+    const prefix=isUnread?'':'Du: ';
     const i=ini(c.linkedin_name);
     const px=proxyUrl(c.avatar_url);
-    return `<div class="contact-item${c.id===selectedId?' active':''}" onclick="selectContact('${c.id}')">
+    return `<div class="contact-item${c.id===selectedId?' active':''}${isUnread?' unread':''}" onclick="selectContact('${c.id}')">
       <div class="c-avatar">
         <span class="ini">${i}</span>
         ${px?`<img src="${px}" alt="${i}" onerror="this.remove()">` : ''}
@@ -657,9 +717,12 @@ function renderContactList(list){
       </div>
       <div class="c-info">
         <div class="c-name">${c.linkedin_name}</div>
-        <div class="c-last${newCls}">${trunc(prefix+c.last_message,52)}</div>
+        <div class="c-last">${trunc(prefix+(c.last_message||''),52)}</div>
       </div>
-      <div class="c-meta"><span class="c-time">${tl(c.last_message_at)}</span></div>
+      <div class="c-meta">
+        <span class="c-time">${tl(c.last_message_at)}</span>
+        ${isUnread?'<div class="unread-dot"></div>':''}
+      </div>
     </div>`;
   }).join('');
 }
@@ -952,6 +1015,7 @@ function renderProfile(c,traj){
         <div class="p-turns">${c.turn_count||0} Turns${c.campaign_id?' · '+esc(c.campaign_id):''}</div>
       </div>
     </div>
+    ${renderProfileDetails(c)}
     <div class="emma-analyse-wrap" id="emma-decision">
       ${renderDecisionHTML(flow,blocker,interv,dtype,state)}
     </div>
@@ -964,6 +1028,37 @@ function renderProfile(c,traj){
   `;
   renderPainPoints(traj);
   renderTrajectory(traj);
+}
+
+function renderProfileDetails(c){
+  const rows=[];
+  if(c.company_name) rows.push({label:'Company',val:esc(c.company_name)});
+  if(c.title)        rows.push({label:'Position',val:esc(c.title)});
+  if(c.location)     rows.push({label:'City',val:esc(c.location)});
+  if(c.connections_count) rows.push({label:'Connections',val:esc(c.connections_count)});
+  if(!rows.length&&!c.email)return'';
+  const detailRows=rows.map(r=>`
+    <div class="p-detail-row">
+      <div class="p-detail-label">${r.label}</div>
+      <div class="p-detail-value">${r.val}</div>
+    </div>`).join('');
+  const emailRow=c.email?`
+    <div class="p-detail-row">
+      <div class="p-detail-label">Email</div>
+      <div class="p-email-row">
+        <div class="p-detail-value" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.email)}</div>
+        <button class="p-copy-btn" onclick="copyEmail('${esc(c.email)}',this)" title="Kopieren">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
+    </div>`:'';
+  return`<div class="p-detail-section">${detailRows}${emailRow}</div>`;
+}
+function copyEmail(email,btn){
+  navigator.clipboard.writeText(email).then(()=>{
+    btn.classList.add('copied');
+    setTimeout(()=>btn.classList.remove('copied'),2000);
+  });
 }
 
 async function refreshProfile(){
