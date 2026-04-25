@@ -400,6 +400,103 @@ body {
 .placeholder p { font-size: 13px; }
 .spinner { width: 18px; height: 18px; border: 2px solid var(--bg4); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── REDESIGNED RIGHT PANEL ── */
+.p-profile-center { text-align: center; padding: 22px 16px 16px; border-bottom: 1px solid var(--border); }
+.p-avatar-lg {
+  width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 12px;
+  background: var(--bg3); overflow: hidden; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 600; color: var(--accent2);
+  border: 2px solid rgba(99,102,241,.35);
+  box-shadow: 0 0 24px rgba(99,102,241,.15);
+}
+.p-avatar-lg img { width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index:1; }
+.p-avatar-lg .ini { position:relative; z-index:0; pointer-events:none; }
+.p-name-lg { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+.p-title-lg { font-size: 12px; color: var(--txt1); margin-bottom: 2px; }
+.p-company-lg { font-size: 11px; color: var(--txt2); }
+.p-location-lg { font-size: 10px; color: var(--txt2); margin-top: 2px; }
+.p-actions { display: flex; justify-content: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.p-linkedin-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 14px; border-radius: 6px; font-size: 11px; font-weight: 600;
+  background: #0a66c2; color: #fff; text-decoration: none; transition: opacity .2s;
+}
+.p-linkedin-btn:hover { opacity: .85; }
+.p-refresh-sm {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 500;
+  background: var(--bg3); border: 1px solid var(--border); color: var(--txt1);
+  cursor: pointer; transition: all .2s;
+}
+.p-refresh-sm:hover { background: var(--bg4); color: var(--txt0); }
+.p-turns { font-size: 10px; color: var(--txt2); margin-top: 8px; }
+/* Emma analyse section */
+.emma-analyse-wrap { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.emma-analyse-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 2px;
+  color: var(--txt2); text-transform: uppercase; margin-bottom: 10px;
+}
+.emma-chips-main { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.cluster-chip-lg {
+  font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px;
+  border: 1.5px solid var(--green); color: var(--green); background: rgba(34,197,94,.08);
+  letter-spacing: .3px;
+}
+.cluster-chip-lg.red { border-color: var(--red); color: var(--red); background: rgba(248,113,113,.08); }
+.cluster-chip-lg.yellow { border-color: var(--yellow); color: var(--yellow); background: rgba(245,158,11,.08); }
+.interv-chip {
+  font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px;
+  background: var(--bg3); color: var(--txt0); border: 1px solid var(--border);
+}
+/* Layers card */
+.layers-card {
+  background: var(--bg2); border-radius: var(--radius); border: 1px solid var(--border);
+  padding: 12px 14px; margin-top: 10px;
+}
+.layers-card-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.layers-card-title { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--txt2); text-transform: uppercase; }
+.layers-movement { font-size: 10px; color: var(--txt1); font-family: 'JetBrains Mono', monospace; }
+.lrow-inline { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.lrow-inline:last-of-type { margin-bottom: 0; }
+.lrow-name-inline {
+  font-size: 11px; font-weight: 500; width: 72px; flex-shrink: 0; color: var(--txt1);
+}
+.lrow-name-inline.blocker { color: var(--red); font-weight: 700; }
+.lrow-bar-inline { flex: 1; height: 4px; background: var(--bg4); border-radius: 4px; overflow: hidden; }
+.lrow-fill-inline { height: 100%; border-radius: 4px; transition: width .5s; }
+.lrow-score-inline {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+  width: 28px; text-align: right; flex-shrink: 0;
+}
+.lrow-conf-inline { font-size: 9px; color: var(--txt2); font-family: 'JetBrains Mono',monospace; width: 22px; flex-shrink: 0; }
+.layers-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.05); }
+.om-badge-lg {
+  font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: .5px;
+}
+.om-badge-lg.om-CRITICAL   { background: rgba(248,113,113,.15); color: var(--red); border: 1px solid rgba(248,113,113,.3); }
+.om-badge-lg.om-SAFE       { background: rgba(245,158,11,.15); color: var(--yellow); border: 1px solid rgba(245,158,11,.3); }
+.om-badge-lg.om-UNCERTAIN  { background: rgba(148,163,184,.1); color: var(--txt1); border: 1px solid rgba(148,163,184,.2); }
+.om-badge-lg.om-NORMAL     { background: rgba(99,102,241,.1); color: var(--accent2); border: 1px solid rgba(99,102,241,.25); }
+.om-badge-lg.om-ESCALATION_ELIGIBLE { background: rgba(34,197,94,.15); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
+.esc-badge { font-size: 10px; color: var(--green); font-weight: 700; }
+/* Analyze btn inside wrap */
+#analyze-btn {
+  display: flex; align-items: center; gap: 6px;
+  width: 100%; margin-top: 10px;
+  padding: 8px 14px; border-radius: var(--radius-sm);
+  background: linear-gradient(135deg,#1e1b4b,#312e81);
+  border: 1px solid rgba(99,102,241,.4); color: var(--accent2);
+  font-size: 11px; font-weight: 600; cursor: pointer; transition: opacity .2s;
+  letter-spacing: .3px;
+}
+#analyze-btn:hover { opacity: .85; }
+#analyze-btn:disabled { opacity: .4; cursor: not-allowed; }
+#analyze-btn.loading { animation: pulse 1s infinite; }
 </style>
 </head>
 <body>
@@ -691,8 +788,7 @@ async function analyzeContact(){
       const ps=document.getElementById('pain-section');
       const hs=document.getElementById('history-section');
       if(de) de.innerHTML=renderDecisionHTML(c.flow_mode||'HOLD',c.blocker||'—',data.current_intervention||'—',data.decision_type||'MIXED',c.state);
-      if(ls) ls.innerHTML=`<div class="sec-label">7 Layer Scores</div>${data.prospect_summary?`<div class="prospect-summary">${esc(data.prospect_summary)}</div>`:''
-      }${renderLayerGridHTML(c.state)}`;
+      if(ls) ls.innerHTML=data.prospect_summary?`<div class="prospect-summary" style="margin-bottom:0">${esc(data.prospect_summary)}</div>`:'';
       if(hs) renderHistoryAnalysis(hist);
       if(ps) renderPainPointsFromState(c.state);
       renderEmmaBar(c);
@@ -837,36 +933,30 @@ function renderProfile(c,traj){
   const px=proxyUrl(c.avatar_url);
   document.getElementById('profile').innerHTML=`
     <div id="profile-card">
-      <div class="p-card-row">
-        <div class="p-avatar">
+      <div class="p-profile-center">
+        <div class="p-avatar-lg">
           <span class="ini">${i}</span>
           ${px?`<img src="${px}" alt="${i}" onerror="this.remove()">`:''}
         </div>
-        <div class="p-info">
-          <div class="p-name">${c.linkedin_name}</div>
-          ${c.title?`<div class="p-title">${esc(c.title)}</div>`:''}
-          ${c.company_name?`<div class="p-company">${esc(c.company_name)}</div>`:''}
-          ${c.location?`<div class="p-location">📍 ${esc(c.location)}</div>`:''}
-          ${c.linkedin_url?`<a class="p-linkedin" href="${c.linkedin_url}" target="_blank" rel="noopener">↗ LinkedIn öffnen</a>`:''}
-          <button class="p-refresh-btn" onclick="refreshProfile()">
+        <div class="p-name-lg">${c.linkedin_name}</div>
+        ${c.title?`<div class="p-title-lg">${esc(c.title)}</div>`:''}
+        ${c.company_name?`<div class="p-company-lg">${esc(c.company_name)}</div>`:''}
+        ${c.location?`<div class="p-location-lg">📍 ${esc(c.location)}</div>`:''}
+        <div class="p-actions">
+          ${c.linkedin_url?`<a class="p-linkedin-btn" href="${c.linkedin_url}" target="_blank" rel="noopener"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg> LinkedIn</a>`:''}
+          <button class="p-refresh-sm" onclick="refreshProfile()">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
-            Profil aktualisieren
+            Aktualisieren
           </button>
-          <div class="p-chips"><span class="p-chip">${c.turn_count||0} Turns</span>${c.campaign_id?`<span class="p-chip">${esc(c.campaign_id)}</span>`:''}</div>
         </div>
+        <div class="p-turns">${c.turn_count||0} Turns${c.campaign_id?' · '+esc(c.campaign_id):''}</div>
       </div>
     </div>
-    <button id="analyze-btn" onclick="analyzeContact()" title="KI-Vollanalyse mit Emma-Framework">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      Emma KI-Analyse starten
-    </button>
-    <div id="emma-decision">
+    <div class="emma-analyse-wrap" id="emma-decision">
       ${renderDecisionHTML(flow,blocker,interv,dtype,state)}
     </div>
-    <div id="layer-section" class="p-section">
-      <div class="sec-label">7 Layer Scores</div>
-      ${state.prospect_summary?`<div class="prospect-summary">${esc(state.prospect_summary)}</div>`:''}
-      ${renderLayerGridHTML(state)}
+    <div id="layer-section" style="padding:0 16px 14px;border-bottom:1px solid var(--border)">
+      ${state.prospect_summary?`<div class="prospect-summary" style="margin-bottom:0">${esc(state.prospect_summary)}</div>`:''}
     </div>
     <div id="history-section" class="p-section"></div>
     <div id="pain-section" class="p-section"></div>
@@ -901,53 +991,67 @@ function renderDecisionHTML(flow,blocker,interv,dtype,state){
   const cluster=state&&state.state_cluster;
   const om=state&&state.output_mode;
   const mv=state&&state.movement_stability;
-  const esc=state&&state.escalation_eligible;
+  const mvScore=state&&(state.movement_score??0);
+  const escEl=state&&state.escalation_eligible;
   const analyzed=state&&state.analyzed_at;
-  return `<div class="sec-label">Emma Entscheidung${analyzed?'<span style="float:right;font-weight:400;color:var(--green);font-size:9px">✓ KI analysiert</span>':''}</div>
-  <div class="drow">
-    <span class="flow-chip flow-${flow}">${flow}</span>
-    ${blocker&&blocker!=='—'?`<span class="blocker-badge">${blocker}</span>`:''}
-    ${om?`<span class="om-chip om-${om}">${om}</span>`:''}
+  // Cluster color: S0-S2 = red/yellow, S3-S4 = yellow/green, S5 = green
+  const clusterColorClass=cluster?({'S0':'red','S1':'red','S2':'yellow','S3':'','S4':'','S5':''}[cluster]||''):'';
+  const clusterLabel=cluster?({'S0':'S0 · Kein Bewusstsein','S1':'S1 · Passiv-latent','S2':'S2 · Aktivierungslücke','S3':'S3 · Limitiert','S4':'S4 · Commitment-bereit','S5':'S5 · Multiplikator'}[cluster]||cluster):'';
+  return `
+  <div class="emma-analyse-label">EMMA · ANALYSE${analyzed?' <span style="color:var(--green);letter-spacing:0">✓</span>':''}</div>
+  <div class="emma-chips-main">
+    ${cluster?`<span class="cluster-chip-lg ${clusterColorClass}">${clusterLabel}</span>`:''}
+    ${interv&&interv!=='—'?`<span class="interv-chip">→ ${interv}</span>`:''}
   </div>
-  <div class="drow" style="margin-top:4px">
-    ${cluster?`<span class="cluster-chip">${CLUSTER_LABELS[cluster]||cluster}</span>`:''}
-    ${mv?`<span class="dtype-badge">${MOVEMENT_LABELS[mv]||mv}</span>`:''}
+  <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">
     <span class="dtype-badge">${DTYPE_LABELS[dtype]||dtype}</span>
-    ${esc?`<span class="dtype-badge" style="color:var(--green)">↑ Eskalierbar</span>`:''}
+    ${mv?`<span class="dtype-badge">${mv}</span>`:''}
+    ${escEl?`<span class="dtype-badge" style="color:var(--green)">↑ Eskalierbar</span>`:''}
+    ${blocker&&blocker!=='—'?`<span class="flow-chip flow-${flow}" style="font-size:10px">${flow}</span>`:'<span class="flow-chip flow-'+flow+'" style="font-size:10px">'+flow+'</span>'}
   </div>
-  <div class="interv-line" style="margin-top:6px">Intervention: <span>${interv&&interv!=='—'?interv:'—'}</span></div>`;
+  ${renderLayerGridHTML(state,mvScore,mv,om)}
+  <button id="analyze-btn" onclick="analyzeContact()" title="KI-Vollanalyse mit Emma-Framework">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    Emma KI-Analyse starten
+  </button>`;
 }
 
-function renderLayerGridHTML(state){
+function renderLayerGridHTML(state,mvScore,mvStab,om){
   const blocker=(state.current_blocker||'').toUpperCase();
-  return LAYERS.map(({key,conf,de})=>{
+  const rows=LAYERS.map(({key,conf,de})=>{
     const v=state[key]??5;
     const cv=state[conf]??state.authority_confidence??0.5;
     const a=ac(v);
     const pct=(v/10*100).toFixed(0);
-    const cpct=(cv*100).toFixed(0);
+    const cvInt=Math.round(cv*10);
     const isBlocker=blocker&&(blocker===de.toUpperCase().slice(0,blocker.length)||de.toUpperCase().includes(blocker));
-    return `<div class="layer-row">
-      <div class="lrow-label${isBlocker?' blocker':''}">
-        <span style="font-size:9px">${dot(v)}</span>
-        ${isBlocker?'⚠ ':''}${de}
-      </div>
-      <div style="flex:1">
-        <div class="lrow-bar"><div class="lrow-fill b${a}" style="width:${pct}%"></div></div>
-        <div class="lrow-conf"><div class="lrow-conf-fill" style="width:${cpct}%"></div></div>
-      </div>
-      <div class="lrow-score ${a}">${v.toFixed(1)}<span class="lscale">/10</span></div>
+    return `<div class="lrow-inline">
+      <div class="lrow-name-inline${isBlocker?' blocker':''}">${isBlocker?'⚠ ':''}${de}</div>
+      <div class="lrow-bar-inline"><div class="lrow-fill-inline b${a}" style="width:${pct}%"></div></div>
+      <div class="lrow-score-inline ${a}">${v.toFixed(0)}/10</div>
+      <div class="lrow-conf-inline">c:${cvInt}</div>
     </div>`;
   }).join('');
+  const mvNum=mvScore??0;
+  const mvLabel=mvStab?` · ${mvStab}`:'';
+  return `<div class="layers-card">
+    <div class="layers-card-head">
+      <span class="layers-card-title">EMMA LAYERS</span>
+      <span class="layers-movement">Movement ${mvNum}/3${mvLabel}</span>
+    </div>
+    ${rows}
+    ${om?`<div class="layers-footer"><span class="om-badge-lg om-${om}">${om}</span>${state.escalation_eligible?'<span class="esc-badge">↑ Eskalierbar</span>':''}</div>`:''}
+  </div>`;
 }
 
 function updateDecisionLayers(c){
   const de=document.getElementById('emma-decision');
-  const ls=document.getElementById('layer-section');
-  if(!de||!ls)return;
+  if(!de)return;
   const state=c.state||{};
   de.innerHTML=renderDecisionHTML(c.flow_mode||state.flow_mode||'HOLD',c.blocker||state.current_blocker||'—',state.current_intervention||'—',state.decision_type||'MIXED',state);
-  ls.innerHTML=`<div class="sec-label">7 Layer Scores</div>${renderLayerGridHTML(state)}`;
+  // prospect summary lives in layer-section
+  const ls=document.getElementById('layer-section');
+  if(ls&&state.prospect_summary)ls.innerHTML=`<div class="prospect-summary" style="margin-bottom:0">${esc(state.prospect_summary)}</div>`;
 }
 
 // ─── PAIN POINTS ───
