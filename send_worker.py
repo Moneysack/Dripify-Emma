@@ -23,7 +23,7 @@ from database.client import get_db
 EMAIL    = settings.dripify_email
 PASSWORD = settings.dripify_password
 BASE     = "https://app.dripify.com"
-INTERVAL = 60  # Sekunden zwischen Checks
+INTERVAL = 5  # Sekunden zwischen Checks
 
 TEXTAREA_SELS = [
     "textarea[placeholder]",
