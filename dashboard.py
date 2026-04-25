@@ -188,7 +188,11 @@ def send_message(contact_id: str, payload: SendPayload):
             dripify_result = {"ok": True, "queued": True}
             queued = True
         except Exception as e:
-            dripify_result = {"ok": False, "error": f"Queue-Fehler: {e}"}
+            err = str(e)
+            if "pending_sends" in err and ("PGRST205" in err or "schema cache" in err.lower()):
+                dripify_result = {"ok": False, "error": "SQL-Migration fehlt — bitte add_send_queue.sql in Supabase ausführen"}
+            else:
+                dripify_result = {"ok": False, "error": f"Queue-Fehler: {err[:120]}"}
     else:
         dripify_result = {"ok": False, "error": "Unbekannter Fehler"}
         try:
