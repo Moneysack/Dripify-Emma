@@ -126,8 +126,55 @@ def _make_context(pw):
     return browser, ctx
 
 
+def _login_if_needed(page, ctx) -> bool:
+    """Login if the page redirected to sign-in. Returns True if session is valid."""
+    if not any(x in page.url for x in ["sign-in", "login", "auth",
+                                         "app.dripify.com/"]):
+        return True  # already logged in
+
+    from config import settings  # type: ignore
+    email    = getattr(settings, "dripify_email", "")
+    password = getattr(settings, "dripify_password", "")
+    if not email or not password:
+        return False
+
+    log.info("Session expired, logging in as %s", email)
+    page.goto(BASE_URL, wait_until="domcontentloaded", timeout=30_000)
+    time.sleep(3)
+
+    for sel in ["#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll",
+                'button:has-text("Allow all")', 'button:has-text("Accept All")']:
+        try:
+            btn = page.wait_for_selector(sel, timeout=3000)
+            if btn and btn.is_visible():
+                btn.click(); time.sleep(2); break
+        except Exception:
+            pass
+
+    try:
+        page.fill('input[type="email"]', email)
+        page.fill('input[type="password"]', password)
+        page.click('button[type="submit"]')
+        page.wait_for_function(
+            "() => !window.location.href.endsWith('app.dripify.com/') && "
+            "      !window.location.href.includes('sign-in') && "
+            "      window.location.href.includes('dripify.com')",
+            timeout=30_000,
+        )
+        time.sleep(3)
+        try:
+            SESSION_FILE.write_text(json.dumps(ctx.storage_state()))
+        except Exception:
+            pass
+        log.info("Login OK: %s", page.url)
+        return True
+    except Exception as e:
+        log.error("Login failed: %s", e)
+        return False
+
+
 def send_message(dripify_contact_id: str, text: str) -> dict:
-    """Open the Dripify conversation and send a message."""
+    """Open the Dripify conversation and send a message. Auto-logins if session expired."""
     url = f"{BASE_URL}/inbox/{dripify_contact_id}"
     pw = sync_playwright().start()
     try:
@@ -136,8 +183,13 @@ def send_message(dripify_contact_id: str, text: str) -> dict:
         page.goto(url, wait_until="domcontentloaded", timeout=30_000)
         time.sleep(3)
 
-        if any(x in page.url for x in ["sign-in", "login", "auth"]):
-            return {"ok": False, "error": "Session abgelaufen — bitte einmal manuell Dripify-Sync starten"}
+        if not _login_if_needed(page, ctx):
+            return {"ok": False, "error": "Login fehlgeschlagen — E-Mail/Passwort prüfen"}
+
+        # Navigate to conversation after potential re-login
+        if "inbox" not in page.url:
+            page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+            time.sleep(3)
 
         # Find textarea
         textarea = None
