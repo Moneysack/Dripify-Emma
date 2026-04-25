@@ -155,15 +155,28 @@ def send_message(contact_id: str, payload: SendPayload):
     if not text:
         raise HTTPException(400, "Empty message")
 
-    # Lookup dripify_contact_id for Playwright navigation
+    # Lookup dripify_contact_id — try contacts table first, fall back to messages table
     contact_row = db.table("contacts").select("dripify_contact_id").eq("id", contact_id).execute().data
     dripify_id  = (contact_row[0].get("dripify_contact_id") or "").strip() if contact_row else ""
 
+    if not dripify_id:
+        # Fallback: dripify_msg_id stored on any message for this contact
+        msg_row = db.table("messages").select("dripify_msg_id") \
+            .eq("contact_id", contact_id).neq("dripify_msg_id", "").limit(1).execute().data
+        if msg_row and msg_row[0].get("dripify_msg_id"):
+            dripify_id = msg_row[0]["dripify_msg_id"].strip()
+            # Back-fill the contacts table so future lookups are fast
+            try:
+                db.table("contacts").update({"dripify_contact_id": dripify_id}) \
+                    .eq("id", contact_id).execute()
+            except Exception:
+                pass
+
     # Send via Playwright (best-effort — store regardless)
     if not dripify_id:
-        dripify_result = {"ok": False, "error": "Dripify-ID fehlt — bitte Sync ausführen"}
+        dripify_result = {"ok": False, "error": "Dripify-ID fehlt — Sync ausführen"}
     elif _ON_VERCEL:
-        dripify_result = {"ok": False, "error": "Senden nur über lokalen Server möglich (nicht Vercel)"}
+        dripify_result = {"ok": False, "error": "Senden nur über lokalen Server (nicht Vercel)"}
     else:
         dripify_result = {"ok": False, "error": "Unbekannter Fehler"}
     if dripify_id and not _ON_VERCEL:
@@ -253,9 +266,15 @@ def refresh_profile(contact_id: str):
     if not contact_row:
         raise HTTPException(404, "Contact not found")
     c = contact_row[0]
-    dripify_id = c.get("dripify_contact_id")
+    dripify_id = (c.get("dripify_contact_id") or "").strip()
     if not dripify_id:
-        raise HTTPException(400, "No Dripify conversation ID")
+        # Fallback: look up from messages
+        msg_row = db.table("messages").select("dripify_msg_id") \
+            .eq("contact_id", contact_id).neq("dripify_msg_id", "").limit(1).execute().data
+        if msg_row and msg_row[0].get("dripify_msg_id"):
+            dripify_id = msg_row[0]["dripify_msg_id"].strip()
+    if not dripify_id:
+        raise HTTPException(400, "Keine Dripify-ID — bitte Sync ausführen")
 
     from dripify.sender import scrape_profile
     profile = scrape_profile(dripify_id)
