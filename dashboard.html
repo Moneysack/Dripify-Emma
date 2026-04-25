@@ -965,6 +965,8 @@ async function sendMessage(){
     const data=await r.json();
     if(data.send_error){
       showToast('err','⚠ '+data.send_error);
+    }else if(data.queued){
+      showToast('ok','⏱ In Warteschlange — wird beim nächsten Sync gesendet');
     }else if(data.sent_to_dripify){
       showToast('ok','✓ Gesendet via Dripify');
     }else{
@@ -1032,10 +1034,11 @@ function renderProfile(c,traj){
 
 function renderProfileDetails(c){
   const rows=[];
-  if(c.company_name) rows.push({label:'Company',val:esc(c.company_name)});
-  if(c.title)        rows.push({label:'Position',val:esc(c.title)});
-  if(c.location)     rows.push({label:'City',val:esc(c.location)});
-  if(c.connections_count) rows.push({label:'Connections',val:esc(c.connections_count)});
+  if(c.company_name)      rows.push({label:'Company',val:esc(c.company_name)});
+  if(c.title)             rows.push({label:'Position',val:esc(c.title)});
+  if(c.location)          rows.push({label:'City',val:esc(c.location)});
+  if(c.country)           rows.push({label:'Country',val:esc(c.country)});
+  if(c.connections_count) rows.push({label:'Connections',val:esc(c.connections_count)+' connections'});
   if(!rows.length&&!c.email)return'';
   const detailRows=rows.map(r=>`
     <div class="p-detail-row">

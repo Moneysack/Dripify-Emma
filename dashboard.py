@@ -92,8 +92,9 @@ def list_contacts():
             "location":        c.get("location", ""),
             "linkedin_url":    c.get("linkedin_url", ""),
             "dripify_contact_id": c.get("dripify_contact_id", ""),
-            "email":           c.get("email", ""),
+            "email":             c.get("email", ""),
             "connections_count": c.get("connections_count", ""),
+            "country":           c.get("country", ""),
             "created_at":      c.get("created_at", ""),
             "turn_count":      conv.get("turn_count", 0),
             "last_message":    lm.get("text", "")[:80],
@@ -172,14 +173,24 @@ def send_message(contact_id: str, payload: SendPayload):
             except Exception:
                 pass
 
-    # Send via Playwright (best-effort — store regardless)
+    # Send via Playwright (local) or queue (Vercel)
+    queued = False
     if not dripify_id:
         dripify_result = {"ok": False, "error": "Dripify-ID fehlt — Sync ausführen"}
     elif _ON_VERCEL:
-        dripify_result = {"ok": False, "error": "Senden nur über lokalen Server (nicht Vercel)"}
+        # Queue for local worker to pick up during next sync
+        try:
+            db.table("pending_sends").insert({
+                "contact_id": contact_id,
+                "dripify_contact_id": dripify_id,
+                "text": text,
+            }).execute()
+            dripify_result = {"ok": True, "queued": True}
+            queued = True
+        except Exception as e:
+            dripify_result = {"ok": False, "error": f"Queue-Fehler: {e}"}
     else:
         dripify_result = {"ok": False, "error": "Unbekannter Fehler"}
-    if dripify_id and not _ON_VERCEL:
         try:
             from dripify.sender import send_message as dripify_send
             dripify_result = dripify_send(dripify_id, text)
@@ -191,7 +202,7 @@ def send_message(contact_id: str, payload: SendPayload):
         "contact_id": contact_id,
         "direction": "outgoing",
         "text": text,
-        "sent_to_dripify": dripify_result.get("ok", False),
+        "sent_to_dripify": dripify_result.get("ok", False) and not queued,
     }).execute()
 
     # Run Emma analysis on the full conversation so far
@@ -246,7 +257,8 @@ def send_message(contact_id: str, payload: SendPayload):
 
     return JSONResponse({
         "ok": True,
-        "sent_to_dripify": dripify_result.get("ok", False),
+        "sent_to_dripify": dripify_result.get("ok", False) and not queued,
+        "queued": queued,
         "send_error": dripify_result.get("error") if not dripify_result.get("ok") else None,
         "blocker": blocker,
         "intervention": intervention,

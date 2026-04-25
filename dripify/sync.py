@@ -262,49 +262,16 @@ class DripifySync:
                 page.goto(f"{BASE_URL}{conv['href']}", wait_until="domcontentloaded", timeout=30_000)
                 time.sleep(2)
 
-                # Scrape full profile from the right panel
-                avatar_url       = conv.get("avatar_url", "")
-                title            = ""
-                company_name     = ""
-                location         = ""
-                linkedin_url     = ""
-                email            = ""
-                connections_count = ""
-                try:
-                    from dripify.sender import _PROFILE_SELS
-                    # Avatar
-                    for sel in [".messages__lead-card .avatar img", ".messages__lead .avatar img",
-                                ".messages__lead img.avatar__userpic", ".lead-card .avatar img",
-                                "[class*='lead'] .avatar img", "[class*='lead'] img"]:
-                        img_el = page.query_selector(sel)
-                        if img_el:
-                            src = img_el.get_attribute("src") or ""
-                            if src and "licdn.com" in src:
-                                avatar_url = src
-                                break
-                    # Text / href profile fields
-                    for field, sels in _PROFILE_SELS.items():
-                        for sel in sels:
-                            try:
-                                el = page.query_selector(sel)
-                                if el:
-                                    if field in ("linkedin_url", "email"):
-                                        href = el.get_attribute("href") or ""
-                                        val = href.replace("mailto:", "").strip() if field == "email" else href
-                                    else:
-                                        val = (el.inner_text() or "").strip()
-                                    if val:
-                                        if field == "title":             title = val
-                                        elif field == "company_name":    company_name = val
-                                        elif field == "location":        location = val
-                                        elif field == "linkedin_url":    linkedin_url = val
-                                        elif field == "email":           email = val
-                                        elif field == "connections_count": connections_count = val
-                                        break
-                            except Exception:
-                                continue
-                except Exception:
-                    pass
+                # Scrape full profile from the right panel using JS evaluator
+                from dripify.sender import scrape_profile_on_page
+                profile          = scrape_profile_on_page(page)
+                avatar_url       = profile.get("avatar_url", conv.get("avatar_url", ""))
+                title            = profile.get("title", "")
+                company_name     = profile.get("company_name", "")
+                location         = profile.get("location", "")
+                linkedin_url     = profile.get("linkedin_url", "")
+                email            = profile.get("email", "")
+                connections_count = profile.get("connections_count", "")
 
                 # Upsert contact using conv_id as stable identifier
                 existing = (
@@ -381,5 +348,45 @@ class DripifySync:
             except Exception as e:
                 log.exception("Error syncing '%s': %s", name, e)
 
+        # Drain pending send queue (messages queued from Vercel dashboard)
+        self._drain_send_queue(db)
+
         log.info("Sync done: %s", summary)
         return summary
+
+    def _drain_send_queue(self, db):
+        """Process messages queued via Vercel and send them via Playwright."""
+        try:
+            pending = db.table("pending_sends") \
+                .select("*").eq("status", "pending").execute().data
+            if not pending:
+                return
+            log.info("Draining %d queued send(s)...", len(pending))
+            from dripify.sender import send_message
+            for item in pending:
+                dripify_id = item.get("dripify_contact_id", "")
+                text       = item.get("text", "")
+                if not dripify_id or not text:
+                    continue
+                result = send_message(dripify_id, text)
+                if result.get("ok"):
+                    db.table("pending_sends").update({
+                        "status": "sent",
+                        "sent_at": "now()",
+                    }).eq("id", item["id"]).execute()
+                    # Also mark message as sent_to_dripify
+                    try:
+                        db.table("messages").update({"sent_to_dripify": True}) \
+                            .eq("contact_id", item["contact_id"]) \
+                            .eq("text", text).eq("direction", "outgoing").execute()
+                    except Exception:
+                        pass
+                    log.info("Queued send OK: %s", dripify_id[:20])
+                else:
+                    db.table("pending_sends").update({
+                        "status": "failed",
+                        "error_msg": result.get("error", ""),
+                    }).eq("id", item["id"]).execute()
+                    log.warning("Queued send FAILED: %s — %s", dripify_id[:20], result.get("error"))
+        except Exception as e:
+            log.exception("Queue drain error: %s", e)
