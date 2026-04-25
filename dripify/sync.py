@@ -262,24 +262,39 @@ class DripifySync:
                 page.goto(f"{BASE_URL}{conv['href']}", wait_until="domcontentloaded", timeout=30_000)
                 time.sleep(2)
 
-                # Grab avatar from the conversation's profile panel (right side) — most reliable
-                avatar_url = conv.get("avatar_url", "")
+                # Scrape full profile from the right panel
+                avatar_url   = conv.get("avatar_url", "")
+                title        = ""
+                company_name = ""
+                location     = ""
+                linkedin_url = ""
                 try:
-                    avatar_selectors = [
-                        ".messages__lead-card .avatar img",
-                        ".messages__lead .avatar img",
-                        ".messages__lead img.avatar__userpic",
-                        ".lead-card .avatar img",
-                        "[class*='lead'] .avatar img",
-                        "[class*='lead'] img",
-                    ]
-                    for sel in avatar_selectors:
+                    from dripify.sender import _PROFILE_SELS
+                    # Avatar
+                    for sel in [".messages__lead-card .avatar img", ".messages__lead .avatar img",
+                                ".messages__lead img.avatar__userpic", ".lead-card .avatar img",
+                                "[class*='lead'] .avatar img", "[class*='lead'] img"]:
                         img_el = page.query_selector(sel)
                         if img_el:
                             src = img_el.get_attribute("src") or ""
                             if src and "licdn.com" in src:
                                 avatar_url = src
                                 break
+                    # Text profile fields
+                    for field, sels in _PROFILE_SELS.items():
+                        for sel in sels:
+                            try:
+                                el = page.query_selector(sel)
+                                if el:
+                                    val = el.get_attribute("href") if field == "linkedin_url" else (el.inner_text() or "").strip()
+                                    if val:
+                                        if field == "title":        title = val
+                                        elif field == "company_name": company_name = val
+                                        elif field == "location":    location = val
+                                        elif field == "linkedin_url": linkedin_url = val
+                                        break
+                            except Exception:
+                                continue
                 except Exception:
                     pass
 
@@ -294,10 +309,12 @@ class DripifySync:
                 if existing:
                     contact_id = existing[0]["id"]
                     summary["contacts_existing"] += 1
-                    # Always update avatar + name
                     update_data = {"linkedin_name": name}
-                    if avatar_url:
-                        update_data["avatar_url"] = avatar_url
+                    if avatar_url:    update_data["avatar_url"]   = avatar_url
+                    if title:         update_data["title"]         = title
+                    if company_name:  update_data["company_name"]  = company_name
+                    if location:      update_data["location"]      = location
+                    if linkedin_url:  update_data["linkedin_url"]  = linkedin_url
                     try:
                         db.table("contacts").update(update_data).eq("id", contact_id).execute()
                     except Exception:
@@ -307,9 +324,13 @@ class DripifySync:
                         db.table("contacts")
                         .insert({
                             "dripify_contact_id": conv_id,
-                            "linkedin_name": name,
-                            "campaign_id": "",
-                            "avatar_url": avatar_url,
+                            "linkedin_name":  name,
+                            "campaign_id":    "",
+                            "avatar_url":     avatar_url,
+                            "title":          title,
+                            "company_name":   company_name,
+                            "location":       location,
+                            "linkedin_url":   linkedin_url,
                         })
                         .execute()
                         .data[0]

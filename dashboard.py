@@ -87,6 +87,11 @@ def list_contacts():
             "linkedin_name":   c.get("linkedin_name", "?"),
             "campaign_id":     c.get("campaign_id", ""),
             "avatar_url":      c.get("avatar_url", ""),
+            "title":           c.get("title", ""),
+            "company_name":    c.get("company_name", ""),
+            "location":        c.get("location", ""),
+            "linkedin_url":    c.get("linkedin_url", ""),
+            "dripify_contact_id": c.get("dripify_contact_id", ""),
             "created_at":      c.get("created_at", ""),
             "turn_count":      conv.get("turn_count", 0),
             "last_message":    lm.get("text", "")[:80],
@@ -142,18 +147,31 @@ class SendPayload(BaseModel):
 
 @app.post("/api/contacts/{contact_id}/send")
 def send_message(contact_id: str, payload: SendPayload):
-    """Store a manual outgoing message and update Emma layer scores."""
+    """Send message via Dripify (Playwright) + store in DB + update Emma scores."""
     db = get_db()
     text = payload.text.strip()
     if not text:
         raise HTTPException(400, "Empty message")
+
+    # Lookup dripify_contact_id for Playwright navigation
+    contact_row = db.table("contacts").select("dripify_contact_id").eq("id", contact_id).execute().data
+    dripify_id  = contact_row[0]["dripify_contact_id"] if contact_row else None
+
+    # Send via Playwright (best-effort — store regardless)
+    dripify_result = {"ok": False, "error": "no dripify_id"}
+    if dripify_id and not _ON_VERCEL:
+        try:
+            from dripify.sender import send_message as dripify_send
+            dripify_result = dripify_send(dripify_id, text)
+        except Exception as e:
+            dripify_result = {"ok": False, "error": str(e)}
 
     # Store outgoing message
     db.table("messages").insert({
         "contact_id": contact_id,
         "direction": "outgoing",
         "text": text,
-        "sent_to_dripify": False,
+        "sent_to_dripify": dripify_result.get("ok", False),
     }).execute()
 
     # Run Emma analysis on the full conversation so far
@@ -208,11 +226,47 @@ def send_message(contact_id: str, payload: SendPayload):
 
     return JSONResponse({
         "ok": True,
+        "sent_to_dripify": dripify_result.get("ok", False),
+        "send_error": dripify_result.get("error") if not dripify_result.get("ok") else None,
         "blocker": blocker,
         "intervention": intervention,
         "flow_mode": flow_mode,
         "scores": scores.to_dict(),
     })
+
+
+# ── refresh profile from Dripify ──────────────────────────────────────────────
+@app.post("/api/contacts/{contact_id}/refresh-profile")
+def refresh_profile(contact_id: str):
+    """Re-scrape LinkedIn profile info from the Dripify conversation panel."""
+    if _ON_VERCEL:
+        raise HTTPException(400, "Profile scraping requires local server")
+    db = get_db()
+    contact_row = db.table("contacts").select("*").eq("id", contact_id).execute().data
+    if not contact_row:
+        raise HTTPException(404, "Contact not found")
+    c = contact_row[0]
+    dripify_id = c.get("dripify_contact_id")
+    if not dripify_id:
+        raise HTTPException(400, "No Dripify conversation ID")
+
+    from dripify.sender import scrape_profile
+    profile = scrape_profile(dripify_id)
+
+    if profile:
+        update = {}
+        for field in ("avatar_url", "title", "company_name", "location", "linkedin_url"):
+            if profile.get(field):
+                update[field] = profile[field]
+        if update:
+            try:
+                db.table("contacts").update(update).eq("id", contact_id).execute()
+            except Exception as e:
+                log.error("Profile update failed: %s", e)
+
+    # Return updated contact
+    updated = {**c, **profile}
+    return JSONResponse(updated)
 
 
 # ── AI reply suggestion ────────────────────────────────────────────────────────
