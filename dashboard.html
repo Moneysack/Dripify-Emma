@@ -49,7 +49,8 @@ input,textarea{font-family:var(--font)}
 .conv-row{padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--bd);transition:background .1s;display:flex;gap:10px;align-items:flex-start}
 .conv-row:hover{background:var(--s2)}
 .conv-row.active{background:var(--s3);border-left:2px solid var(--blue)}
-.conv-avatar{width:34px;height:34px;border-radius:50%;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--blue);flex-shrink:0;position:relative}
+.conv-avatar{width:34px;height:34px;border-radius:50%;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--blue);flex-shrink:0;position:relative;overflow:hidden}
+.conv-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .conv-dot{position:absolute;bottom:0;right:0;width:9px;height:9px;border-radius:50%;background:var(--green);border:2px solid var(--s1)}
 .conv-dot.yellow{background:var(--yellow)}
 .conv-dot.red{background:var(--red)}
@@ -61,7 +62,8 @@ input,textarea{font-family:var(--font)}
 /* THREAD PANEL */
 #thread-panel{flex:1;display:flex;flex-direction:column;min-width:0}
 .thread-header{padding:14px 18px;border-bottom:1px solid var(--bd);background:var(--s1);display:flex;align-items:center;gap:12px}
-.thread-avatar{width:36px;height:36px;border-radius:50%;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:var(--blue)}
+.thread-avatar{width:36px;height:36px;border-radius:50%;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:var(--blue);overflow:hidden;flex-shrink:0}
+.thread-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .thread-name{font-size:14px;font-weight:600;color:var(--text)}
 .thread-sub{font-size:11px;color:var(--text2)}
 .thread-chips{margin-left:auto;display:flex;gap:6px;align-items:center}
@@ -110,6 +112,22 @@ input,textarea{font-family:var(--font)}
 .skill-tag{padding:3px 8px;border-radius:20px;font-size:10px;background:var(--s2);color:var(--text2);border:1px solid var(--bd)}
 .analyze-btn{width:100%;padding:8px;background:var(--blue);color:#fff;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:background .15s}
 .analyze-btn:hover{background:var(--blue2)}
+
+/* PROFILE AVATAR LARGE */
+.profile-avatar{width:52px;height:52px;border-radius:50%;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:var(--blue);flex-shrink:0;overflow:hidden;border:2px solid var(--bd2)}
+.profile-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.profile-head{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.profile-head-info{flex:1;min-width:0}
+/* LEAD DATA ROWS */
+.data-row{display:flex;align-items:center;gap:7px;padding:3px 0;font-size:11px;color:var(--text2);min-width:0}
+.data-row .icon{font-size:11px;width:14px;flex-shrink:0;text-align:center;color:var(--text3)}
+.data-row a{color:var(--blue);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.data-row a:hover{text-decoration:underline}
+.data-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.premium-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:10px;font-size:9px;font-weight:700;background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.25);margin-left:4px;vertical-align:middle}
+/* CAMPAIGN INFO */
+.campaign-row{font-size:11px;color:var(--text2);margin-bottom:4px}
+.campaign-row b{color:var(--text);font-weight:500}
 
 /* 7-LAYER AMPEL */
 .layer-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
@@ -304,11 +322,14 @@ function renderContactList() {
     const snippet = c.last_message ? c.last_message.slice(0,42) + (c.last_message.length > 42 ? '…' : '') : '–';
     const isActive = c.id === selectedId;
     const time = c.last_message_at ? new Date(c.last_message_at).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) : '';
+    const avatarInner = c.avatar_url
+      ? `<img src="/api/img?url=${encodeURIComponent(c.avatar_url)}" onerror="this.style.display='none'" alt="">`
+      : initials;
     return `<div class="conv-row${isActive?' active':''}" onclick="selectContact('${c.id}')">
-      <div class="conv-avatar">${initials}<span class="conv-dot ${dotClass}"></span></div>
+      <div class="conv-avatar">${avatarInner}<span class="conv-dot ${dotClass}"></span></div>
       <div class="conv-meta">
-        <div class="conv-name">${c.linkedin_name || 'Unbekannt'}</div>
-        <div class="conv-snippet">${snippet}</div>
+        <div class="conv-name">${escHtml(c.linkedin_name || 'Unbekannt')}</div>
+        <div class="conv-snippet">${escHtml(snippet)}</div>
         <div class="conv-time">${time}</div>
       </div>
     </div>`;
@@ -334,11 +355,15 @@ function renderThreadHeader(contact) {
   const flow = contact.flow_mode || (contact.state && contact.state.flow_mode) || 'HOLD';
   const turn = contact.turn_count || 0;
   const flowCls = flow === 'ADVANCE' ? 'chip-advance' : flow === 'RECOVERY' ? 'chip-recovery' : 'chip-hold';
+  const avatarInner = contact.avatar_url
+    ? `<img src="/api/img?url=${encodeURIComponent(contact.avatar_url)}" onerror="this.outerHTML='${initials}'" alt="">`
+    : initials;
+  const sub = [contact.title || contact.job_title, contact.company_name].filter(Boolean).join(' · ');
   document.getElementById('thread-header').innerHTML = `
-    <div class="thread-avatar">${initials}</div>
+    <div class="thread-avatar">${avatarInner}</div>
     <div>
-      <div class="thread-name">${contact.linkedin_name || 'Unbekannt'}</div>
-      <div class="thread-sub">${contact.company_name || ''}</div>
+      <div class="thread-name">${escHtml(contact.linkedin_name || 'Unbekannt')}</div>
+      <div class="thread-sub">${escHtml(sub)}</div>
     </div>
     <div class="thread-chips">
       <span class="chip chip-blocker">⚠ ${blocker}</span>
@@ -442,13 +467,46 @@ function renderRightPanel(contact, analysis) {
     ? `<div style="font-size:11px;color:var(--text2);line-height:1.55">${escHtml(analysis.summary)}</div>`
     : '';
 
+  const initials = (contact.linkedin_name || '?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const avatarInner = contact.avatar_url
+    ? `<img src="/api/img?url=${encodeURIComponent(contact.avatar_url)}" onerror="this.style.display='none'" alt="">`
+    : initials;
+  const isPremium = contact.is_premium ? '<span class="premium-badge">★ Premium</span>' : '';
+  const responded = contact.responded ? '<span class="premium-badge" style="background:rgba(34,197,94,.1);color:#22c55e;border-color:rgba(34,197,94,.25)">✓ Hat geantwortet</span>' : '';
+
+  function dataRow(icon, content) {
+    return content ? `<div class="data-row"><span class="icon">${icon}</span><span>${content}</span></div>` : '';
+  }
+  function linkRow(icon, href, label) {
+    return href ? `<div class="data-row"><span class="icon">${icon}</span><a href="${escHtml(href)}" target="_blank">${escHtml(label || href)}</a></div>` : '';
+  }
+
   el.innerHTML = `
     <!-- Profile -->
     <div class="right-section">
       <div class="section-title">Profil</div>
-      <div class="profile-name">${escHtml(contact.linkedin_name || 'Unbekannt')}</div>
-      <div class="profile-role">${escHtml(contact.job_title || contact.title || '')}${contact.company_name ? ' · ' + escHtml(contact.company_name) : ''}</div>
-      <div class="profile-badges">
+      <div class="profile-head">
+        <div class="profile-avatar">${avatarInner}</div>
+        <div class="profile-head-info">
+          <div class="profile-name">${escHtml(contact.linkedin_name || 'Unbekannt')}${isPremium}</div>
+          <div class="profile-role">${escHtml(contact.title || contact.job_title || '')}${contact.company_name ? '<br><span style="color:var(--text3)">' + escHtml(contact.company_name) + '</span>' : ''}</div>
+          ${responded}
+        </div>
+      </div>
+      ${dataRow('📍', [contact.location, contact.country].filter(Boolean).join(', '))}
+      ${dataRow('🏭', [contact.industry, contact.company_employees ? contact.company_employees + ' MA' : ''].filter(Boolean).join(' · '))}
+      ${dataRow('⏱', contact.time_in_role ? 'Seit ' + contact.time_in_role + ' in dieser Rolle' : '')}
+      ${dataRow('🔗', contact.connections_count ? contact.connections_count + ' Connections' : '')}
+      ${dataRow('⭐', contact.top_skill)}
+      ${linkRow('in', contact.linkedin_url, 'LinkedIn Profil öffnen')}
+      ${linkRow('🌐', contact.website, contact.website)}
+      ${dataRow('✉', contact.email)}
+      ${dataRow('📞', contact.phone)}
+      <div style="margin-top:10px"></div>
+      ${contact.campaign_name ? `<div class="campaign-row">Kampagne: <b>${escHtml(contact.campaign_name)}</b></div>` : ''}
+      ${contact.campaign_step ? `<div class="campaign-row">Schritt: <b>${escHtml(contact.campaign_step)}</b></div>` : ''}
+      ${contact.campaign_status ? `<div class="campaign-row">Status: <b>${escHtml(contact.campaign_status)}</b></div>` : ''}
+      <div class="profile-badges" style="margin-top:8px">
         <span class="skill-tag">BANT</span>
         <span class="skill-tag">ICP</span>
         <span class="skill-tag">Qualify</span>
