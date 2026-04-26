@@ -95,6 +95,19 @@ def list_contacts():
             "email":             c.get("email", ""),
             "connections_count": c.get("connections_count", ""),
             "country":           c.get("country", ""),
+            # enriched fields
+            "phone":             c.get("phone", ""),
+            "website":           c.get("website", ""),
+            "industry":          c.get("industry", ""),
+            "top_skill":         c.get("top_skill", ""),
+            "time_in_role":      c.get("time_in_role", ""),
+            "is_premium":        c.get("is_premium", False),
+            "responded":         c.get("responded", False),
+            "company_employees": c.get("company_employees", 0),
+            "campaign_name":     c.get("campaign_name", ""),
+            "campaign_status":   c.get("campaign_status", ""),
+            "campaign_step":     c.get("campaign_step", ""),
+            "linkedin_public_id":c.get("linkedin_public_id", ""),
             "created_at":      c.get("created_at", ""),
             "turn_count":      conv.get("turn_count", 0),
             "last_message":    lm.get("text", "")[:80],
@@ -545,6 +558,36 @@ def analyze_history(contact_id: str):
         .data
     )
     return JSONResponse(analyze_phases(msgs))
+
+
+# ── Enrich contacts from Dripify API ──────────────────────────────────────────
+_enrich_status = {"running": False, "last": None}
+
+def _run_enrich():
+    _enrich_status["running"] = True
+    try:
+        from dripify.api_client import DripifyApiClient
+        client = DripifyApiClient(settings.dripify_email, settings.dripify_password)
+        db = get_db()
+        result = client.enrich_all_contacts(db)
+        _enrich_status["last"] = result
+    except Exception as e:
+        _enrich_status["last"] = {"error": str(e)}
+    finally:
+        _enrich_status["running"] = False
+
+@app.post("/api/enrich")
+def trigger_enrich():
+    """Fetch full lead data from Dripify API and update all contacts."""
+    if _enrich_status["running"]:
+        return JSONResponse({"status": "already_running"})
+    t = threading.Thread(target=_run_enrich, daemon=True)
+    t.start()
+    return JSONResponse({"status": "started"})
+
+@app.get("/api/enrich/status")
+def enrich_status():
+    return JSONResponse(_enrich_status)
 
 
 # ── Dripify sync ───────────────────────────────────────────────────────────────

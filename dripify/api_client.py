@@ -168,6 +168,97 @@ class DripifyApiClient:
             self._conv_cache[short_id] = full_id
         return full_id
 
+    # ── Lead enrichment ─────────────────────────────────────────────────────
+    def get_lead_data(self, lead_in_user_id: int) -> dict:
+        """Fetch full lead profile from /api/leads/{id}."""
+        r = httpx.get(f"{BASE}/api/leads/{lead_in_user_id}", headers=self._headers(), timeout=30)
+        if r.status_code != 200:
+            return {}
+        d = r.json()
+        camp = {}
+        for c in d.get("leadInCampaigns", []):
+            # prefer the active/most recent campaign
+            if not camp or c["campaign"].get("status") == "ACTIVE":
+                camp = c
+        time_in_role = ""
+        tir = d.get("timeInRole", {})
+        if tir:
+            sd = tir.get("startDate", {})
+            if sd:
+                time_in_role = f"{sd.get('month',0):02d}/{sd.get('year',0)}"
+        return {
+            "dripify_lead_id":    str(d.get("id", "")),
+            "phone":              d.get("phone", "") or "",
+            "website":            d.get("website", "") or "",
+            "industry":           d.get("industry", "") or "",
+            "top_skill":          d.get("topSkill", "") or "",
+            "time_in_role":       time_in_role,
+            "is_premium":         bool(d.get("premium", False)),
+            "responded":          bool(d.get("responded", False)),
+            "company_employees":  int((d.get("companyResponse") or {}).get("numberOfEmployees") or 0),
+            "linkedin_public_id": d.get("publicId", "") or "",
+            "campaign_name":      camp.get("campaign", {}).get("name", "") if camp else "",
+            "campaign_status":    camp.get("leadInCampaignStatus", "") if camp else "",
+            "campaign_step":      camp.get("sequenceItemStatus", "") if camp else "",
+        }
+
+    def enrich_all_contacts(self, db) -> dict:
+        """Fetch all conversations from Dripify API, enrich every contact in Supabase."""
+        if not self._ensure_token():
+            return {"error": "Login fehlgeschlagen"}
+        summary = {"enriched": 0, "skipped": 0}
+        page_num = 0
+        while page_num < 20:
+            url = f"{BASE}/api/messaging/conversations?archived=false&size=50&page={page_num}"
+            r = httpx.get(url, headers=self._headers(), timeout=30)
+            if r.status_code != 200:
+                break
+            data = r.json()
+            items = data.get("content", [])
+            for item in items:
+                lc = item.get("linkedinConversation", {})
+                full_id = lc.get("id", "")
+                lead_id = item.get("leadInUserId")
+                if not full_id or not lead_id:
+                    continue
+                # Find short ID prefix in our contacts table
+                short_prefix = full_id[:22]  # "2-OTg2ZjRlOTQtNzE5My" length
+                rows = (
+                    db.table("contacts")
+                    .select("id,dripify_contact_id")
+                    .like("dripify_contact_id", short_prefix + "%")
+                    .limit(1)
+                    .execute()
+                    .data
+                )
+                if not rows:
+                    # Try exact match or starts-with match
+                    rows = (
+                        db.table("contacts")
+                        .select("id,dripify_contact_id")
+                        .eq("dripify_contact_id", full_id.split("=")[0])  # strip base64 padding
+                        .limit(1)
+                        .execute()
+                        .data
+                    )
+                if not rows:
+                    summary["skipped"] += 1
+                    continue
+                contact_id = rows[0]["id"]
+                enriched = self.get_lead_data(lead_id)
+                if enriched:
+                    try:
+                        db.table("contacts").update(enriched).eq("id", contact_id).execute()
+                        summary["enriched"] += 1
+                        log.info("Enriched %s", contact_id)
+                    except Exception as e:
+                        log.warning("Enrich failed for %s: %s", contact_id, e)
+                        summary["skipped"] += 1
+            if data.get("last", True):
+                break
+            page_num += 1
+        return summary
+
     # ── Send ────────────────────────────────────────────────────────────────
     def send_message(self, dripify_contact_id: str, text: str) -> dict:
         """Send a message. dripify_contact_id can be the short or full conversation ID."""

@@ -141,18 +141,47 @@ body {
 .contact-item.unread .c-last { color: var(--txt1); font-weight: 500; }
 .unread-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
 /* Profile detail fields */
-.p-detail-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
-.p-detail-row { margin-bottom: 12px; }
+.p-detail-section { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.p-detail-row { margin-bottom: 10px; }
 .p-detail-row:last-child { margin-bottom: 0; }
-.p-detail-label { font-size: 10px; color: var(--txt2); margin-bottom: 2px; font-weight: 500; letter-spacing: .3px; }
+.p-detail-label { font-size: 10px; color: var(--txt2); margin-bottom: 2px; font-weight: 500; letter-spacing: .3px; text-transform: uppercase; }
 .p-detail-value { font-size: 12px; font-weight: 600; color: var(--txt0); line-height: 1.4; }
-.p-email-row { display: flex; align-items: center; gap: 8px; }
+.p-email-row,.p-phone-row,.p-web-row { display: flex; align-items: center; gap: 8px; }
 .p-copy-btn {
   background: none; border: none; color: var(--txt2); cursor: pointer;
   padding: 2px; border-radius: 4px; transition: color .15s; flex-shrink: 0;
 }
 .p-copy-btn:hover { color: var(--accent2); }
 .p-copy-btn.copied { color: var(--green); }
+/* Badges row */
+.p-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 3px; }
+.p-badge {
+  font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 99px;
+  background: rgba(255,255,255,.06); color: var(--txt1); border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.p-badge.premium { background: rgba(251,191,36,.12); color: #fbbf24; border-color: rgba(251,191,36,.3); }
+.p-badge.responded { background: rgba(52,211,153,.12); color: var(--green); border-color: rgba(52,211,153,.3); }
+.p-badge.industry { background: rgba(99,102,241,.12); color: #a5b4fc; border-color: rgba(99,102,241,.3); }
+.p-badge.skill { background: rgba(236,72,153,.12); color: #f9a8d4; border-color: rgba(236,72,153,.3); }
+/* Campaign chip */
+.p-campaign-row { display: flex; align-items: flex-start; gap: 6px; }
+.p-camp-name { font-size: 11px; font-weight: 600; color: var(--txt0); flex: 1; line-height: 1.4; }
+.p-camp-chip {
+  font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 4px;
+  background: rgba(255,255,255,.07); color: var(--txt2); white-space: nowrap; flex-shrink: 0;
+}
+.p-camp-chip.active { background: rgba(52,211,153,.15); color: var(--green); }
+.p-camp-chip.paused { background: rgba(251,191,36,.12); color: #fbbf24; }
+.p-camp-chip.ended  { background: rgba(239,68,68,.12); color: var(--red); }
+/* Enrich button */
+.p-enrich-btn {
+  background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.35);
+  color: #a5b4fc; font-size: 10px; font-weight: 600; padding: 4px 9px;
+  border-radius: 6px; cursor: pointer; transition: background .15s;
+}
+.p-enrich-btn:hover { background: rgba(99,102,241,.25); }
+.p-enrich-btn:disabled { opacity: .5; cursor: default; }
 
 /* ── CENTER CHAT ── */
 #chat {
@@ -1013,8 +1042,9 @@ function renderProfile(c,traj){
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
             Aktualisieren
           </button>
+          <button class="p-enrich-btn" id="enrich-btn" onclick="enrichContacts()">⚡ Enrich</button>
         </div>
-        <div class="p-turns">${c.turn_count||0} Turns${c.campaign_id?' · '+esc(c.campaign_id):''}</div>
+        <div class="p-turns">${c.turn_count||0} Turns${c.campaign_name?' · '+esc(c.campaign_name.substring(0,28)):''}</div>
       </div>
     </div>
     ${renderProfileDetails(c)}
@@ -1033,35 +1063,121 @@ function renderProfile(c,traj){
 }
 
 function renderProfileDetails(c){
-  const rows=[];
-  if(c.company_name)      rows.push({label:'Company',val:esc(c.company_name)});
-  if(c.title)             rows.push({label:'Position',val:esc(c.title)});
-  if(c.location)          rows.push({label:'City',val:esc(c.location)});
-  if(c.country)           rows.push({label:'Country',val:esc(c.country)});
-  if(c.connections_count) rows.push({label:'Connections',val:esc(c.connections_count)+' connections'});
-  if(!rows.length&&!c.email)return'';
-  const detailRows=rows.map(r=>`
-    <div class="p-detail-row">
-      <div class="p-detail-label">${r.label}</div>
-      <div class="p-detail-value">${r.val}</div>
-    </div>`).join('');
-  const emailRow=c.email?`
+  const COPY_IC=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+  const parts=[];
+
+  // ── Row 1: Company + Position ──────────────────────────────────────────────
+  if(c.company_name||c.title){
+    let row='';
+    if(c.company_name) row+=`<div class="p-detail-row"><div class="p-detail-label">Company</div><div class="p-detail-value">${esc(c.company_name)}</div></div>`;
+    if(c.title)        row+=`<div class="p-detail-row"><div class="p-detail-label">Position</div><div class="p-detail-value">${esc(c.title)}</div></div>`;
+    parts.push(row);
+  }
+
+  // ── Row 2: Location ────────────────────────────────────────────────────────
+  const loc=[c.location,c.country].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(' · ');
+  if(loc) parts.push(`<div class="p-detail-row"><div class="p-detail-label">Location</div><div class="p-detail-value">${esc(loc)}</div></div>`);
+
+  // ── Row 3: Company stats ───────────────────────────────────────────────────
+  {
+    const bits=[];
+    if(c.connections_count) bits.push(`👥 ${esc(String(c.connections_count))} connections`);
+    if(c.company_employees>0) bits.push(`🏢 ${c.company_employees} employee${c.company_employees!==1?'s':''}`);
+    if(c.time_in_role) bits.push(`⏱ seit ${c.time_in_role}`);
+    if(bits.length) parts.push(`<div class="p-detail-row"><div class="p-detail-label">Stats</div><div class="p-detail-value" style="font-size:11px">${bits.join(' &nbsp;·&nbsp; ')}</div></div>`);
+  }
+
+  // ── Row 4: Badges (premium, responded, industry, skill) ───────────────────
+  {
+    const badges=[];
+    if(c.is_premium) badges.push(`<span class="p-badge premium">⚡ Premium</span>`);
+    if(c.responded)  badges.push(`<span class="p-badge responded">✓ Responded</span>`);
+    if(c.industry)   badges.push(`<span class="p-badge industry">${esc(c.industry)}</span>`);
+    if(c.top_skill)  badges.push(`<span class="p-badge skill">${esc(c.top_skill)}</span>`);
+    if(badges.length) parts.push(`<div class="p-detail-row"><div class="p-detail-label">Profile</div><div class="p-badges">${badges.join('')}</div></div>`);
+  }
+
+  // ── Row 5: Contact info ────────────────────────────────────────────────────
+  if(c.email) parts.push(`
     <div class="p-detail-row">
       <div class="p-detail-label">Email</div>
       <div class="p-email-row">
         <div class="p-detail-value" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.email)}</div>
-        <button class="p-copy-btn" onclick="copyEmail('${esc(c.email)}',this)" title="Kopieren">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        </button>
+        <button class="p-copy-btn" onclick="copyVal('${esc(c.email)}',this)" title="Kopieren">${COPY_IC}</button>
       </div>
-    </div>`:'';
-  return`<div class="p-detail-section">${detailRows}${emailRow}</div>`;
+    </div>`);
+  if(c.phone) parts.push(`
+    <div class="p-detail-row">
+      <div class="p-detail-label">Phone</div>
+      <div class="p-phone-row">
+        <div class="p-detail-value" style="flex:1">${esc(c.phone)}</div>
+        <button class="p-copy-btn" onclick="copyVal('${esc(c.phone)}',this)" title="Kopieren">${COPY_IC}</button>
+      </div>
+    </div>`);
+  if(c.website) parts.push(`
+    <div class="p-detail-row">
+      <div class="p-detail-label">Website</div>
+      <div class="p-web-row">
+        <a class="p-detail-value" href="https://${c.website.replace(/^https?:\/\//,'')}" target="_blank" rel="noopener" style="flex:1;color:var(--accent2);text-decoration:none">${esc(c.website)}</a>
+      </div>
+    </div>`);
+
+  // ── Row 6: Campaign ────────────────────────────────────────────────────────
+  if(c.campaign_name){
+    const statusClass={
+      'PROCESSING_PAUSED':'paused','PROCESSING_ENDED':'ended','READY_FOR_PROCESSING':'active',
+      'ACTIVE':'active','PAUSED':'paused'
+    }[c.campaign_status]||'';
+    const stepLabel=(c.campaign_step||'').replace(/_/g,' ');
+    parts.push(`
+    <div class="p-detail-row">
+      <div class="p-detail-label">Campaign</div>
+      <div class="p-campaign-row">
+        <div class="p-camp-name">${esc(c.campaign_name)}</div>
+        ${stepLabel?`<span class="p-camp-chip ${statusClass}">${stepLabel}</span>`:''}
+      </div>
+    </div>`);
+  }
+
+  if(!parts.length) return '';
+  return`<div class="p-detail-section">${parts.join('')}</div>`;
 }
-function copyEmail(email,btn){
-  navigator.clipboard.writeText(email).then(()=>{
+function copyVal(val,btn){
+  navigator.clipboard.writeText(val).then(()=>{
     btn.classList.add('copied');
     setTimeout(()=>btn.classList.remove('copied'),2000);
   });
+}
+// keep old name for any stale references
+function copyEmail(v,b){ copyVal(v,b); }
+
+async function enrichContacts(){
+  const btn=document.getElementById('enrich-btn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Enriching…';}
+  try{
+    const r=await fetch('/api/enrich',{method:'POST'});
+    const d=await r.json();
+    showToast('info','Enrich gestartet — Daten werden geladen…');
+    // Poll until done
+    let attempts=0;
+    const poll=async()=>{
+      attempts++;
+      const s=await(await fetch('/api/enrich/status')).json();
+      if(s.running&&attempts<30){setTimeout(poll,2000);return;}
+      if(btn){btn.disabled=false;btn.textContent='⚡ Enrich';}
+      if(s.last&&!s.last.error){
+        showToast('success',`Enriched: ${s.last.enriched} Kontakte`);
+        await loadContacts();
+        if(selectedId) selectContact(selectedId);
+      } else if(s.last&&s.last.error){
+        showToast('error','Enrich Fehler: '+s.last.error);
+      }
+    };
+    setTimeout(poll,2000);
+  }catch(e){
+    if(btn){btn.disabled=false;btn.textContent='⚡ Enrich';}
+    showToast('error','Enrich fehlgeschlagen');
+  }
 }
 
 async function refreshProfile(){
