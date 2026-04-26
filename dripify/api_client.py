@@ -206,6 +206,17 @@ class DripifyApiClient:
         """Fetch all conversations from Dripify API, enrich every contact in Supabase."""
         if not self._ensure_token():
             return {"error": "Login fehlgeschlagen"}
+
+        # Load all contacts into memory for fast matching
+        all_contacts = db.table("contacts").select("id,dripify_contact_id").execute().data
+        # Build map: stored_short_id -> contact_uuid
+        contact_map = {
+            c["dripify_contact_id"]: c["id"]
+            for c in all_contacts
+            if c.get("dripify_contact_id")
+        }
+        log.info("Enriching %d contacts…", len(contact_map))
+
         summary = {"enriched": 0, "skipped": 0}
         page_num = 0
         while page_num < 20:
@@ -221,38 +232,23 @@ class DripifyApiClient:
                 lead_id = item.get("leadInUserId")
                 if not full_id or not lead_id:
                     continue
-                # Find short ID prefix in our contacts table
-                short_prefix = full_id[:22]  # "2-OTg2ZjRlOTQtNzE5My" length
-                rows = (
-                    db.table("contacts")
-                    .select("id,dripify_contact_id")
-                    .like("dripify_contact_id", short_prefix + "%")
-                    .limit(1)
-                    .execute()
-                    .data
-                )
-                if not rows:
-                    # Try exact match or starts-with match
-                    rows = (
-                        db.table("contacts")
-                        .select("id,dripify_contact_id")
-                        .eq("dripify_contact_id", full_id.split("=")[0])  # strip base64 padding
-                        .limit(1)
-                        .execute()
-                        .data
-                    )
-                if not rows:
+                # Match: find a stored short_id that is a prefix of the Dripify full_id
+                contact_id = None
+                for short_id, cid in contact_map.items():
+                    if full_id.startswith(short_id):
+                        contact_id = cid
+                        break
+                if not contact_id:
                     summary["skipped"] += 1
                     continue
-                contact_id = rows[0]["id"]
                 enriched = self.get_lead_data(lead_id)
                 if enriched:
                     try:
                         db.table("contacts").update(enriched).eq("id", contact_id).execute()
                         summary["enriched"] += 1
-                        log.info("Enriched %s", contact_id)
+                        log.info("Enriched: %s", contact_id)
                     except Exception as e:
-                        log.warning("Enrich failed for %s: %s", contact_id, e)
+                        log.warning("Enrich failed %s: %s", contact_id, e)
                         summary["skipped"] += 1
             if data.get("last", True):
                 break

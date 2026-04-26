@@ -46,47 +46,70 @@ def map_intervention(blocker: str, scores: LayerScores, flow_mode: str = "HOLD")
     return "MIRROR"  # fallback
 
 
-# Human-readable instruction snippets injected into the OpenAI system prompt
+# Human-readable instruction snippets injected into the OpenAI system prompt per turn
 INTERVENTION_INSTRUCTIONS: dict[str, str] = {
     "MIRROR": (
-        "Spiegele den Zustand des Nutzers zurück. Keine Lösung, kein Pitch. "
-        "Maximal 2 Sätze + eine offene Frage."
+        "MIRROR — Goal: reflect their reality without judgment.\n"
+        "Do NOT offer a solution. Do NOT pitch. Do NOT explain.\n"
+        "1–2 sentences that show you heard them, then one open question that opens their thinking.\n"
+        "Example feel: 'Versteh ich. Die meisten merken das erst, wenn es anfängt, sie wirklich zu nerven. "
+        "Was passiert bei euch, wenn jemand plötzlich ausfällt?'"
     ),
     "REFRAME": (
-        "Reframe das Problem auf die strukturelle Ebene. "
-        "Konkrete Frage: Was passiert, wenn das Problem bleibt?"
+        "REFRAME — Goal: open a new perspective on the problem.\n"
+        "Do NOT explain, do NOT convince, do NOT offer a solution yet.\n"
+        "Introduce one structural thought: what happens if the problem stays?\n"
+        "End with exactly one question that makes them reconsider. No pitch."
     ),
     "SAFETY": (
-        "Baue Sicherheit auf. Kein Druck, kein Pitch, kein Humor. "
-        "Validiere die Skepsis, frage konkret nach dem Bedenken."
+        "SAFETY — Goal: increase perceived safety and lower threat level.\n"
+        "No evaluation, no argumentation, no persuasion, no justification, no humor.\n"
+        "Validate the skepticism explicitly. Ask one soft, open question about the specific concern.\n"
+        "Do NOT say 'Ich helfe dir', 'unsere Lösung', or any claim/promise.\n"
+        "Tone: calm, patient, zero pressure."
     ),
     "TRUST_BUILD": (
-        "Öffne vorsichtig. Validiere die Erfahrung, gib etwas Konkretes preis. "
-        "Keine Eskalation. Eine ruhige Frage."
+        "TRUST_BUILD — Goal: build credibility gradually.\n"
+        "Validate their experience first. Then share one concrete, transparent fact or example.\n"
+        "No exaggeration, no big claims. One quiet question at the end.\n"
+        "No escalation. No product mention."
     ),
     "CLARIFY": (
-        "Stelle eine einfache, konkrete Klärungsfrage. "
-        "Kein Erklären. Reduktion auf das Wesentlichste."
+        "CLARIFY — Goal: remove uncertainty without leading the answer.\n"
+        "Ask exactly one open, neutral question. Do NOT interpret. Do NOT suggest a direction.\n"
+        "If they said 'makes sense / sounds logical' without real understanding: do NOT agree and continue. "
+        "Ask one concretizing question instead: 'Was würde das konkret für euch bedeuten?'"
     ),
     "STRUCTURE": (
-        "Gib dem Nutzer eine klare, logische Struktur (wenn → dann). "
-        "Max. 3 Punkte. Keine Optionen, kein Overload."
+        "STRUCTURE — Goal: make one concept clear and tangible.\n"
+        "Use a simple if→then logic. Maximum 3 points. No options, no overload.\n"
+        "Speak in everyday language, not abstract concepts.\n"
+        "For THINKER type: cause→effect allowed. For others: keep it visual and concrete.\n"
+        "End with one question."
     ),
     "REDUCE": (
-        "Maximal EINEN Gedanken + EINE Frage. Kein Erklären, keine Lösung, kein Pitch. "
-        "Druck rausnehmen, Raum geben."
+        "REDUCE — Goal: remove all friction and cognitive load.\n"
+        "MAXIMUM: one thought + one question. Response must be 1–2 lines only.\n"
+        "No content, no explanation, no solution, no pitch, no complexity.\n"
+        "Acknowledge their capacity constraint, give them space.\n"
+        "Example: 'Macht Sinn. Magst du mir kurz sagen, was gerade das Größte ist?'"
     ),
     "ACTIVATE": (
-        "Aktiviere den nächsten konkreten Schritt. Kurz, direkt, handlungsorientiert. "
-        "Nenn einen mini-Schritt, keine große Verpflichtung."
+        "ACTIVATE — Goal: trigger one small, concrete next action.\n"
+        "Do NOT explain more. Do NOT pitch again. They already agreed or showed interest.\n"
+        "Name one mini-step that requires minimal commitment.\n"
+        "Direct, brief, action-oriented. No big ask."
     ),
     "ROUTE": (
-        "Klär den Entscheidungspfad. Wer entscheidet das? Wie läuft das intern ab? "
-        "Kein Closing, kein Nutzen-Pitch. Nur Struktur."
+        "ROUTE — Goal: clarify the decision path, not the content.\n"
+        "Do NOT add more content or benefits. Focus only on: who decides, how does the process work, "
+        "what does the next internal step look like?\n"
+        "No closing attempt. No pitch. Just structure the path forward."
     ),
     "PARK": (
-        "Verlangsame das Gespräch bewusst. Respektiere den Zustand. "
-        "Hinterlasse eine einladende, offene Tür ohne Druck."
+        "PARK — Goal: deliberately slow the conversation. Respect their current state.\n"
+        "Leave one open, inviting door with zero pressure.\n"
+        "Short, warm, no content. Let them come back on their terms."
     ),
 }
 

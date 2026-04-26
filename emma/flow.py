@@ -40,6 +40,8 @@ def build_emma_instruction(
         else "Eskalation möglich wenn Movement vorhanden."
     )
 
+    ease_length = "1–2 lines max (Ease is low — reduce everything)." if scores.ease_score < 4 else "2–5 lines max."
+
     return f"""[EMMA DECISION — Turn {turn}]
 Blocker         : {blocker}
 Intervention    : {intervention}
@@ -47,17 +49,18 @@ Flow Mode       : {flow_mode}
 Decision Type   : {scores.decision_type}
 Gates           : {gate_info}
 
-Layer Scores:
-  State      {scores.state_score:.1f} | Clarity {scores.clarity_score:.1f}
-  Ease       {scores.ease_score:.1f} | Trust   {scores.trust_score:.1f}
-  Momentum   {scores.momentum_score:.1f} | Authority {scores.authority_score:.1f} (conf: {scores.authority_confidence:.2f})
+Layer Scores (0–10):
+  State    {scores.state_score:.1f}  |  Clarity   {scores.clarity_score:.1f}
+  Ease     {scores.ease_score:.1f}  |  Trust     {scores.trust_score:.1f}
+  Momentum {scores.momentum_score:.1f}  |  Authority {scores.authority_score:.1f} (confidence: {scores.authority_confidence:.2f})
 
-Instruktion:
+Intervention Instructions:
 {instruction_text}
 
-Regeln für diese Antwort:
+Rules for this response:
 - {escalation_rule}
-- Maximal EINE Frage ODER ein klarer nächster Schritt.
-- Kein Mehrfachziel. Kein doppeltes Problem öffnen.
-- Sprache: klar, menschlich, respektvoll. Kein Corporate-Speak.
-- Länge: maximal 3-4 Sätze."""
+- Exactly ONE question OR one clear next step. Never both. Never multiple questions.
+- One blocker. One intervention. No combined goals.
+- Response length: {ease_length}
+- Language: clear, human, respectful. No corporate speak. No buzzwords.
+- Respond in German unless the prospect wrote in English."""
